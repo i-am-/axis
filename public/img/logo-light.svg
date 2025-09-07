@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="10.167167mm"
+   height="10.167168mm"
+   viewBox="0 0 10.167167 10.167168"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer1"
+     transform="translate(-99.218745,-77.522915)">
+    <g
+       id="g1"
+       transform="translate(99.218749,77.522919)">
+      <circle
+         style="fill:#006b7f;fill-opacity:1;stroke:#006b7f;stroke-width:0.495456;stroke-opacity:1"
+         id="path7078-0"
+         cx="5.0835853"
+         cy="5.0835843"
+         r="4.8358579" />
+      <g
+         id="g2"
+         transform="translate(-6.5017146,-37.035484)"
+         style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-opacity:1">
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:Subpear;-inkscape-font-specification:Subpear;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.264583;stroke-opacity:1"
+           x="8.2084332"
+           y="43.288177"
+           id="text7060-7-9-4-17"><tspan
+             id="tspan7060-1-8-6-9"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:'PT Serif Caption';-inkscape-font-specification:'PT Serif Caption';fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.264583;stroke-opacity:1"
+             x="8.2084332"
+             y="43.288177">Ig</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:Subpear;-inkscape-font-specification:Subpear;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.264583;stroke-opacity:1"
+           x="11.701113"
+           y="43.291748"
+           id="text7060-7-9-4-1-1"><tspan
+             id="tspan7060-1-8-6-7-0"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.52778px;font-family:'PT Serif Caption';-inkscape-font-specification:'PT Serif Caption';fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.264583;stroke-opacity:1"
+             x="11.701113"
+             y="43.291748">.C</tspan></text>
+      </g>
+    </g>
+  </g>
+</svg>
