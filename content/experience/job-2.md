@@ -1,17 +1,13 @@
 ---
 date: 2023-12-01T00:00:00+01:00
 draft: false
-title: "Job #2"
-jobTitle: "Chief Intern"
-company: "Internet Affairs Inc. "
-location: "Stavanger, Norway"
-duration: "2023-2024"
+title: "Senior Manager"
+jobTitle: "Senior Manager"
+company: "PwC"
+location: "🇮🇪 Dublin, Ireland"
+duration: "2016-2019"
 
 ---
-## 2nd job: Chief Intern
+## Senior Manager
 
-As Chief Intern at Internet Affairs Inc., I led several key initiatives that helped streamline our internal processes and boost productivity. Working closely with cross-functional teams, I developed and implemented an automated documentation system that reduced report generation time by 65% and improved accuracy by 40%.
-
-During my internship, I spearheaded the company's first-ever "Innovation Lab" program, where I mentored junior interns and coordinated weekly brainstorming sessions. This initiative resulted in three patent-pending solutions and garnered attention from senior management. The program has since been adopted as a permanent fixture in the company's internship structure.
-
-My most significant achievement was the successful implementation of a machine learning algorithm that optimized our resource allocation system. This project not only improved resource utilization by 35% but also led to my eventual promotion to CIO. I also actively participated in community outreach programs, organizing coding workshops for local high school students and contributing to the company's STEM education initiatives.
+As a Senior Manager at PwC Ireland, I specialized in leading complex operational effectiveness projects. My key achievement was directing a successful international Oracle JD Edwards ERP rollout for the Order-to-Cash process at Pfizer, which included a critical integration with Salesforce. I also spearheaded the implementation of the Camunda Business Process Management system, which automated intercompany settlements and significantly improved efficiency. In addition to these projects, I led research on the operational impacts of Brexit and contributed to a supply chain risk assessment toolkit specifically for the Irish Food Supply Chains.
