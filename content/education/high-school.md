@@ -1,10 +1,10 @@
 ---
 date: '2024-08-25T09:53:42+02:00' # date in which the content is created - defaults to "today"
-title: 'High School of Hard Knocks'
+title: 'St. Petersburg State University'
 draft: false # set to "true" if you want to hide the content 
 
-university: "High School of Hard Knocks"
-year: "2009-2012"
-degree: "High School Diploma, Sciences, Math, Computer & Business Studies"
+university: "St.Petersburg State University"
+year: "1998-2003"
+degree: "Specialist, Environmental Geology"
 
 ---

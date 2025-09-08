@@ -6,43 +6,53 @@ description: "Domains of expertise."
 skill_categories:
   - name: "Coaching Areas"
     skills:
-      - name: "Life Coaching 🎭"
+      - name: "Life 🎭"
         level: 95
-        description: "Helping clients find clarity and grow through life's biggest challenges."
-        years: ""
+        description: "Clarity and growth through life's biggest challenges"
+        years: "2"
       - name: "Cross-cultural communications 🌈"
         level: 85
-        years: ""
-        description: "Enterprise applications, Spring framework"
+        years: "9"
+        description: "Understanding values, customs and biases"
       - name: "Relationships 🤼"
-        level: 90
-        years: ""
-        description: "Applying a lifelong mentorship philosophy to help clients build and strengthen meaningful connections."
-      - name: "Leadership Development 🙋"
+        level: 70
+        years: "1"
+        description: "Building and strengthening meaningful connections"
+      - name: "Leadership 🙋"
         level: 80
-        years: ""
-        description: "Mentoring the next generation of professionals to succeed and lead with purpose."
-      - name: "Career Coaching 🤝"
+        years: "10"
+        description: "Understanding corporate dysfunction"
+      - name: "Career 🤝"
+        level: 65
+        years: "2"
+        description: "Navigating and thriving through career transitions and changes"
+      - name: "Impostor syndrome 🏆"
         level: 75
-        years: ""
-        description: "Dedicated to helping individuals navigate and thrive through career transitions and changes."
-      - name: "Change Management 🔥"
-        level: 75
-        years: ""
-        description: "Guiding clients through periods of significant change and helping them find a path to growth."
+        years: "2"
+        description: "Finding self-worth and self-acceptance"
       - name: "ADHD and Neurodivergence 🎨"
-        level: 75
-        years: ""
-        description: "Helping individuals facing unique challenges to find clarity and a path to personal excellence."
-      - name: "Operations Excellence 🏆"
-        level: 75
-        years: ""
-        description: "Improving processes by eliminating waste and dysfunctional management."
+        level: 55
+        years: "1"
+        description: "Turbo-charging executive function"
+      
 ---
-<left>
+
+<table>
+<tr>
+<td>
 Coaching as a discipline traces its roots to the ancient Greek philosopher and a decorated military hero Socrates (470-399 BC), who believed in seeking truth through a question-and-answer method known as Socratic dialogue. This approach is fundamental to modern coaching.
-</left>
-<left>
+
 A coach acts as a thought partner, guiding clients toward their own solutions by asking powerful questions rather than providing answers. This process of active listening and creating a safe space for self-discovery empowers clients to achieve their personal and professional goals.
-</left>
-<img src=""/>
+</td>
+<td>
+{{< figure
+  src="/images/skills/socrates.png"
+  alt="Scorates"
+  caption="Socrates"
+  width="100"
+>}}
+</td>
+</tr>
+</table>
+
+
