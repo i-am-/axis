@@ -1,18 +1,6 @@
 @import url('https://fonts.cdnfonts.com/css/pt-sans-2');
 @import url('https://fonts.cdnfonts.com/css/pt-serif');
 
-[data-bs-theme="light"]  {
-  --bs-code-color:#2F5C58;
-  --bs-font-sans-serif: 'PT Sans', serif;
-  --bs-font-serif: 'PT Serif', serif;
-}
-
-
-
-[data-bs-theme="dark"] {
-            --logo: url(/img/logo-dark.svg) no-repeat;
-}
-
 html {
     font-family: 'PT Serif', serif;
 }
@@ -26,7 +14,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .navbar-brand {
-    font-family: 'PT Serif', serif;
+    font-family: 'PT Serif Caption', serif;
 }
 
 @font-face {

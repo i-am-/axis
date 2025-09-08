@@ -67,12 +67,11 @@ title = 'Igniting Coach'
 description = 'Coaching site'
 images = ['/img/og-img.png']
 sections = [
-  "about",
+  "home",
+  "bio",
   "coaching",
-  "testimonial",
-  "skills",
-  "blog",
-  "client-work",
+  "testimonials",
+  "articles",
 ]
 # If you want to display an image logo in the header, you can add it here
 logo = '/img/logo-light.svg'
@@ -130,12 +129,12 @@ weight = 1
 
 [[languages.en.menus.header]]
 name = 'Bio'
-URL = '#about'
+URL = '#bio'
 weight = 2
 
 [[languages.en.menus.header]]
 name = 'The process'
-URL = '/process'
+URL = '#process'
 weight = 3
 
 [[languages.en.menus.header]]
@@ -184,7 +183,8 @@ URL = "js/library/fontfaceobserver.js"
 # SCSS Plugins
 [[params.plugins.scss]]
 URL = "scss/adritian.scss"
-
+[[params.plugins.scss]]
+URL = "scss/custom.scss"
 
 # theme/color style 
 [params.colorTheme]
