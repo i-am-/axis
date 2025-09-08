@@ -29,14 +29,14 @@ draft = false
 {{< /showcase-section >}}
 
 {{< testimonial-section
-    title="Testimonials" >}}
+    title="What clients say" >}}
 
 {{< education-list
-    title="Academia" >}}
+    title="Education" >}}
 
 {{< experience-list
     title="Professional experience"
-    padding="false" >}}
+    padding="true" >}}
 
 {{< spacer size="large" >}}
 
