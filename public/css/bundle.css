@@ -1,20 +1,54 @@
-@import url('https://fonts.cdnfonts.com/css/pt-sans-2');
-@import url('https://fonts.cdnfonts.com/css/pt-serif');
-
-html {
-    font-family: 'PT Serif', serif;
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Roboto Flex';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/roboto-flex-v30-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
-body {
-    font-family: 'PT Serif', serif;
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Roboto Serif';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/roboto-serif-v16-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'PT Serif Caption', serif;
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/roboto-mono-v30-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
-.navbar-brand {
-    font-family: 'PT Serif Caption', serif;
+html body {
+  font-family: "Roboto Flex", sans-serif;
+  font-feature-settings: "ss03" 1; /* Use the Helvetica-like "R" alternative */
+}
+
+body a, p, button, a.btn, div {
+    font-family: "Roboto Flex", sans-serif;
+}
+
+body h1, h2, h3, h4, h5, h6 {
+    font-family: "Roboto Serif", serif;
+}
+
+div h1, h2, h3, h4, h5, h6 {
+    font-family: "Roboto Serif", serif;
+}
+
+body .navbar-brand {
+    font-family: "Roboto Serif", serif;
+}
+
+body code {
+    font-family: 'Roboto Mono', monospace;
+}
+
+body .form-control {
+    font-family: 'Roboto Mono', monospace;
 }
 
 @font-face {
