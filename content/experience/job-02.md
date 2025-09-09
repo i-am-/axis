@@ -1,12 +1,12 @@
 ---
-date: 2022-12-01T00:00:00+01:00
+date: 2019-12-01T00:00:00+01:00
 draft: false
 title: ""
 jobTitle: "Associate Director | AZ"
 company: "AstraZeneca, RDU"
 location: "🇮🇪 Dublin, Ireland"
 duration: "2019-now"
-sectionId: "2"
+
 ---
 ## Associate Director, IT Global Supply Chain Lead, AstraZeneca
 

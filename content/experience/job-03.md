@@ -1,12 +1,12 @@
 ---
-date: 2023-12-01T00:00:00+01:00
+date: 2016-12-01T00:00:00+01:00
 draft: false
 title: ""
 jobTitle: "Senior Manager | PwC"
 company: "PwC"
 location: "🇮🇪 Dublin, Ireland"
 duration: "2016-2019"
-sectionId: "3"
+
 ---
 ## Senior Manager in Operational Effectiveness, PwC Ireland
 

@@ -1,12 +1,12 @@
 ---
-date: 2024-12-01T00:00:00+01:00
+date: 2013-12-01T00:00:00+01:00
 draft: false
 title: ""
 jobTitle: "Senior Manager | PwC"
 company: "PwC"
 location: "🇷🇺 Moscow, Russia"
 duration: "2013-2016"
-sectionId: "1"
+
 ---
 ## Senior Manager in Strategy & Operations, PwC Russia
 
