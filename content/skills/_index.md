@@ -1,5 +1,5 @@
 ---
-title: "Coaching domains"
+title: "Coaching Areas"
 date: 2025-05-19T14:56:00+01:00
 draft: false
 description: "Domains of expertise."
