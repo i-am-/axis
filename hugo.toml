@@ -65,7 +65,7 @@ target = "assets/css/bootstrap-print.css"
 [params]
 title = 'Igniting Coach'
 description = 'Coaching site'
-images = ['/img/og-img.png']
+#images = ['/img/og-img.png']
 sections = [
   "home",
   "bio",

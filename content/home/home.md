@@ -13,7 +13,7 @@ draft = false
     button_text="Coaching domains"
     button_url="/skills"
     imgSrc="images/about/face-avatar2.png"
-    imgScale=".6"
+    imgScale="1"
     text_align="left"
  >}}
 

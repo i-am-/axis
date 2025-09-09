@@ -18,7 +18,7 @@ draft = false
     contact_email_email="<a href='mailto:me@igniting.coach'>me@igniting.coach</a>"
     contact_address_title="My location"
     contact_address_address="🇮🇪 Islandbridge, Dublin 8, Ireland"
-    form_action="https://formspree.io/f/mail@example.com"
+    form_action=""
     form_method="POST"
     contact_form_rows="3"
 >}}
