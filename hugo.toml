@@ -73,7 +73,7 @@ sections = [
   "home",
   "bio",
   "process",
-  "testimonials",
+  "testimonial",
   "articles",
 ]
 # If you want to display an image logo in the header, you can add it here
@@ -130,10 +130,10 @@ name = "Home"
 URL = "/"
 weight = 1
 
-[[languages.en.menus.header]]
-name = 'Bio'
-URL = '#bio'
-weight = 2
+#[[languages.en.menus.header]]
+#name = 'Bio'
+#URL = '#bio'
+#weight = 2
 
 [[languages.en.menus.header]]
 name = 'The process'
@@ -142,7 +142,7 @@ weight = 3
 
 [[languages.en.menus.header]]
 name = "Testimonials"
-URL = "#testimonials"
+URL = "#testimonial"
 weight = 5
 
 [[languages.en.menus.header]]
