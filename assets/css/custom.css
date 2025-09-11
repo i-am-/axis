@@ -9,8 +9,8 @@
 @font-face {
   font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
   font-family: 'Roboto Serif';
-  font-style: normal;
-  font-weight: 400;
+  font-style: bold;
+  font-weight: 600;
   src: url('/fonts/roboto-serif-v16-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
@@ -24,7 +24,6 @@
 
 html body {
   font-family: "Roboto Flex", sans-serif;
-  font-feature-settings: "ss03" 1; /* Use the Helvetica-like "R" alternative */
 }
 
 body a, p, button, a.btn, div {
