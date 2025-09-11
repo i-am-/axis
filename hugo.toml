@@ -61,6 +61,9 @@ target = "assets/js/vendor/bootstrap.bundle.min.js"
 source = "node_modules/bootstrap-print-css/css/bootstrap-print.css"
 target = "assets/css/bootstrap-print.css"
 
+[[module.mounts]]
+source = "node_modules/dompurify/dist/purify.min.js"
+target = "static/js/purify.min.js"
 
 [params]
 title = 'Igniting Coach'
@@ -69,7 +72,7 @@ description = 'Coaching site'
 sections = [
   "home",
   "bio",
-  "coaching",
+  "process",
   "testimonials",
   "articles",
 ]
@@ -154,11 +157,16 @@ URL = "#contact"
 weight = 6
 
 [[languages.en.menus.header]]
+pre = "linkedin"
+name = "linkedin"
+URL = "https://www.linkedin.com/in/imalyarenko"
+weight = 7
+
+[[languages.en.menus.header]]
 pre = "search"
 name = "Search"
 URL = "/search"
-weight = 7
-
+weight = 9
 
 # Plugins
 [params.plugins]
@@ -177,8 +185,9 @@ URL = "css/bootstrap-print.css"
 URL = "js/rad-animations.js"
 [[params.plugins.js]]
 URL = "js/sticky-header.js"
-[[params.plugins.js]]
-URL = "js/library/fontfaceobserver.js"
+
+#[[params.plugins.js]]
+#URL = "js/library/fontfaceobserver.js"
 
 # SCSS Plugins
 [[params.plugins.scss]]
@@ -218,7 +227,7 @@ showRecentPosts = true
 recentPostCount = 5
 listStyle = "summary"  # options: simple, summary
 featured_sort_by_weight = true
-featured_sort_by_date = false
+featured_sort_by_date = true
 
 
 [params.experience]

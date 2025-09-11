@@ -1,0 +1,26 @@
+{
+  "name": "ok-js",
+  "description": "An object utility library",
+  "main": "dist/ok.min.js",
+  "authors": [
+    "stickycube"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "object",
+    "properties",
+    "ensure",
+    "getproperty",
+    "setproperty",
+    "utility"
+  ],
+  "homepage": "https://github.com/StickyCube/ok-js",
+  "moduleType": [],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

@@ -59,8 +59,6 @@
       "use"
     ],
     "classes": [
-      "about-me",
-      "about__profile-picture",
       "active",
       "alert",
       "alert-warning",
@@ -225,7 +223,6 @@
       "icon-x-twitter",
       "icon-yelp",
       "icon-youtube",
-      "image-left-overflow",
       "img-fluid",
       "img-responsive",
       "inner-content",
@@ -318,7 +315,6 @@
       "page-shortcodes",
       "page-skills",
       "page-ztos",
-      "pb-0",
       "platform-links",
       "position-relative",
       "position-static",
@@ -334,7 +330,6 @@
       "pt-0",
       "pt-2",
       "pt-4",
-      "pt-5",
       "pt-md-4",
       "published-label",
       "px-0",
@@ -374,7 +369,6 @@
       "skill-name",
       "skill-years",
       "skip-to-content-link",
-      "spacer",
       "stretched-link",
       "summary",
       "table",
@@ -401,7 +395,6 @@
     ],
     "ids": [
       "TableOfContents",
-      "about",
       "about-me",
       "adding-the-theme",
       "additional-resources",
