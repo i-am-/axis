@@ -5,7 +5,7 @@ title: ""
 jobTitle: "Associate Director"
 company: "AstraZeneca"
 location: "Dublin, Ireland"
-duration: "2019-now"
+duration: "2019-..."
 
 ---
 
