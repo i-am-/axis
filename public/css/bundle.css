@@ -38,6 +38,11 @@ div h1, h2, h3, h4, h5, h6 {
     font-family: "Roboto Serif", serif;
 }
 
+h2.post-title a {
+    font-family: "Roboto Serif", serif;
+}
+
+
 body .navbar-brand {
     font-family: "Roboto Serif", serif;
 }
@@ -50,7 +55,9 @@ body .form-control {
     font-family: 'Roboto Mono', monospace;
 }
 
-@font-face {
+body {
+    text-align: left;
+}@font-face {
   font-family: 'adritian-icons';
   src: url('../fonts/adritian-icons.eot?62019798');
   src: url('../fonts/adritian-icons.eot?62019798#iefix') format('embedded-opentype'),

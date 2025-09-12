@@ -1,10 +1,10 @@
 ---
-title: "Coaching"
+title: "Coaching discipline"
 date: 2025-05-19T14:56:00+01:00
 draft: false
 description: "Domains of coaching expertise."
 skill_categories:
-  - name: "Coaching domains"
+  - name: "Coaching domains & experience"
     skills:
       - name: "Life 🎭"
         level: 95

@@ -9,4 +9,4 @@ duration: "2013-2016"
 
 ---
 
-As a Senior Manager at PwC Moscow, I specialized in a range of strategic and operational projects. My work focused on Supply Chain Network Design and ERP implementation, achieving up to $10 million in direct savings for clients. I applied Lean Six Sigma methodologies to drive efficiency, notably increasing a feed plant's capacity by 3% using SMED (Single-Minute Exchange of Dies). Additionally, I conducted Operational Due Diligence for major transactions across the steel, pharmaceutical, and agribusiness sectors.
+As a Senior Manager at PwC Moscow, I focused on strategic and operational projects that delivered tangible results. I specialized in Supply Chain Network Design and ERP implementations, directly saving clients up to $10 million. A key part of my work involved applying Lean Six Sigma principles to improve efficiency. For example, I successfully increased a feed plant's capacity by 3% through a SMED project. My experience also includes leading Operational Excellence initiatives across the steel, pharmaceutical, and agribusiness industries.
