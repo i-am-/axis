@@ -308,6 +308,7 @@
       "page-new-icons",
       "page-other-installation-methods",
       "page-pci",
+      "page-resources",
       "page-sample",
       "page-sample-3",
       "page-search",
@@ -394,10 +395,18 @@
       "wordcount"
     ],
     "ids": [
+      "1-assessments",
+      "11-the-big-five-personality-test-ocean",
+      "12-the-lüscher-color-test",
+      "13-life-stress-inventory",
+      "14-work-stress-inventory",
+      "15-rockeach-value-survey-rvs",
+      "2-tools",
       "TableOfContents",
       "about-me",
       "adding-the-theme",
       "additional-resources",
+      "assessments",
       "basic-syntax",
       "bd-theme-footer",
       "bd-theme-header",
@@ -436,6 +445,7 @@
       "images",
       "improving-the-theme",
       "inline-code",
+      "life-stress-inventory",
       "links",
       "lists",
       "main",
@@ -449,6 +459,8 @@
       "prerequisites",
       "publishing-the-site",
       "references",
+      "rockeach-value-survey",
+      "rockeach-value-survey-rvs",
       "search-query",
       "search-result-template",
       "search-results",
@@ -463,13 +475,17 @@
       "syntax-highlighting",
       "tables",
       "testimonial",
+      "the-big-five-personality-test-ocean",
+      "the-lüscher-color-test",
       "theme-dropdown-footer",
       "theme-dropdown-header",
       "title",
+      "tools",
       "traditional-installation-as-git-submodule",
       "troubleshooting",
       "unordered",
-      "wordcount"
+      "wordcount",
+      "work-stress-inventory"
     ]
   }
 }

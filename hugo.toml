@@ -9,7 +9,7 @@ languageCode = "en"
   section = ["HTML"]
   taxonomy = ["HTML"]
   term = ["HTML"]
-  footer = ["HTML"]
+  footer = []
 
 # Explicitly prevent the footer section from generating any output
 [outputFormats.footerSection]
@@ -74,6 +74,7 @@ sections = [
   "bio",
   "process",
   "testimonial",
+  "resources",
   "articles",
 ]
 # If you want to display an image logo in the header, you can add it here
@@ -141,9 +142,9 @@ URL = '#process'
 weight = 3
 
 [[languages.en.menus.header]]
-name = "Testimonials"
-URL = "#testimonial"
-weight = 5
+name = "Resources"
+URL = "/resources"
+weight = 4
 
 [[languages.en.menus.header]]
 name = "Articles"
@@ -154,19 +155,26 @@ weight = 6
 pre = "email"
 name = "email"
 URL = "#contact"
-weight = 6
+weight = 7
 
 [[languages.en.menus.header]]
 pre = "linkedin"
 name = "linkedin"
 URL = "https://www.linkedin.com/in/imalyarenko"
-weight = 7
+weight = 8
 
 [[languages.en.menus.header]]
 pre = "search"
 name = "Search"
 URL = "/search"
 weight = 9
+
+#[[languages.en.menus.header]]
+#pre = "user"
+#name = "Book"
+#URL = "https://cal.com/igniting-coach"
+#weight = 10
+
 
 # Plugins
 [params.plugins]
@@ -207,7 +215,6 @@ URL = "scss/custom.scss"
 ## the following parameter will disable theme override in the footer
 #  [params.colorTheme.selector.disable]
 #  footer = true
-
 
 [params.colorTheme.selector.disable]
 footer = false
