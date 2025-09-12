@@ -15,7 +15,19 @@ draft = false
     text_align="left"
  >}}
 {{< /showcase-section >}}
-
+{{< contact-section
+    title="Contact me" 
+    contact_form_name="Your name"
+    contact_form_email="Your email"
+    contact_form_message="Your text"
+    contact_form_phone="Your phone"
+    contact_button="Send message"
+    contact_address_title="My location"
+    contact_address_address="Islandbridge, Dublin 8, Ireland"
+    form_action=""
+    form_method="POST"
+    contact_form_rows="3"
+>}}
 {{< showcase-section
     title="How coaching helps"
     subtitle="<a name='process'></a>"
@@ -24,19 +36,6 @@ draft = false
     imgScale="1"
     text_align="left"
  >}}
-        {{< contact-section
-        title="Contact me" 
-        contact_form_name="Your name"
-        contact_form_email="Your email"
-        contact_form_message="Your text"
-        contact_form_phone="Your phone"
-        contact_button="Send message"
-        contact_address_title="My location"
-        contact_address_address="Islandbridge, Dublin 8, Ireland"
-        form_action=""
-        form_method="POST"
-        contact_form_rows="3"
-    >}}
 {{< /showcase-section >}}
 
 
@@ -49,4 +48,3 @@ draft = false
 
 {{< testimonial-section
     title="What clients say" >}}
-
