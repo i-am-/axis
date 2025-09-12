@@ -139,6 +139,21 @@
 {{ end }}
 
 <section {{if $sectionId}} id="{{ $sectionId }}"{{end}} class="section section--contact pt-0">
+  <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const htmlElement = document.documentElement;
+        const recaptcha = document.querySelector('.g-recaptcha');
+
+        if (recaptcha && htmlElement) {
+          const currentTheme = htmlElement.getAttribute('data-bs-theme');
+          
+          // Check if the current theme is specifically 'dark'
+          if (currentTheme === 'dark') {
+            recaptcha.setAttribute('data-theme', 'dark');
+          }
+        }
+      });
+  </script>
     <div class="container">
         <div class="contact w-100">
             <h2>{{ $title }}</h2>
