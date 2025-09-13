@@ -12,7 +12,7 @@ Coaching is a way to look at your life from the outside in and unveil key roadbl
 
 This model of the 'divine machine' is based on a well-known manufacturing concept called <em>Overall Equipment Effectiveness (OEE)</em>. OEE framework measures the efficiency of a machine by breaking it down into three components: <code>Availability</code>, <code>Performance</code>, and <code>Quality</code>. By applying this same logic to ourselves, we can identify areas for personal improvement and work towards optimising our own 'machine'.
 
-<img src="/images/blog/oee1.png" />
+<center><img src="/images/blog/oee1.png" /></center>
 
 The first component, <code>Availability</code>, measures the time the machine is operational and ready to produce. For a human, this refers to the time we are physically and mentally available for productive work or activity. Availability losses are anything that causes downtime: illness, lack of sleep, burnout, or even distractions that pull us away from our goals. To maximise this metric, we must prioritise self-care, rest, nutrition, and mental health practices that keep our divine machine running without interruption. Just as a factory machine requires scheduled maintenance, so too do we need to schedule time for holidays and recovery to ensure our long-term availability.
 
