@@ -76,6 +76,7 @@ sections = [
   "testimonial",
   "resources",
   "articles",
+  "newsletter"
 ]
 # If you want to display an image logo in the header, you can add it here
 logo = '/img/logo-light.svg'
@@ -163,6 +164,11 @@ name = "linkedin"
 URL = "https://www.linkedin.com/in/imalyarenko"
 weight = 8
 
+[[languages.en.menus.header]]
+pre = "newsletter"
+name = "newsletter"
+URL = ""
+weight = 9
 
 # Plugins
 [params.plugins]
@@ -216,13 +222,13 @@ mobileHeader = false
 enabled = false  # Set to false to disable the page fade transition effect
 
 [params.blog]
-layout = "sidebar-right"     # options: default (no sidebar), sidebar, sidebar-right
-sidebarWidth = "25"    # percentage width of the sidebar
-showCategories = true
+layout = "sidebar"     # options: default (no sidebar), sidebar, sidebar-right
+sidebarWidth = "30"    # percentage width of the sidebar
+showCategories = false
 showRecentPosts = true
 recentPostCount = 5
-listStyle = "summary"  # options: simple, summary
-featured_sort_by_weight = true
+listStyle = "simple"  # options: simple, summary
+featured_sort_by_weight = false
 featured_sort_by_date = true
 
 
