@@ -163,18 +163,6 @@ name = "linkedin"
 URL = "https://www.linkedin.com/in/imalyarenko"
 weight = 8
 
-[[languages.en.menus.header]]
-pre = "search"
-name = "Search"
-URL = "/search"
-weight = 9
-
-#[[languages.en.menus.header]]
-#pre = "user"
-#name = "Book"
-#URL = "https://cal.com/igniting-coach"
-#weight = 10
-
 
 # Plugins
 [params.plugins]
@@ -196,9 +184,6 @@ URL = "js/sticky-header.js"
 
 [[params.plugins.js]]
 URL = "js/library/fontfaceobserver.js"
-
-[[params.plugins.js]]
-URL = "js/library/purify.js"
 
 
 # SCSS Plugins
