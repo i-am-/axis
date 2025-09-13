@@ -163,11 +163,11 @@ name = "linkedin"
 URL = "https://www.linkedin.com/in/imalyarenko"
 weight = 8
 
-[[languages.en.menus.header]]
-pre = "search"
-name = "Search"
-URL = "/search"
-weight = 9
+#[[languages.en.menus.header]]
+#pre = "search"
+#name = "Search"
+#URL = "/search"
+#weight = 9
 
 #[[languages.en.menus.header]]
 #pre = "user"
@@ -231,10 +231,10 @@ mobileHeader = false
 enabled = false  # Set to false to disable the page fade transition effect
 
 [params.blog]
-layout = "sidebar-right"     # options: default (no sidebar), sidebar, sidebar-right
+layout = "default"     # options: default (no sidebar), sidebar, sidebar-right
 sidebarWidth = "25"    # percentage width of the sidebar
-showCategories = true
-showRecentPosts = true
+showCategories = false
+showRecentPosts = false
 recentPostCount = 5
 listStyle = "summary"  # options: simple, summary
 featured_sort_by_weight = true
