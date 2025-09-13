@@ -1,9 +1,9 @@
 [build.environment]
-DART_SASS_VERSION = "1.92.1"
+DART_SASS_VERSION = "1.91.0"
 GO_VERSION = "1.25.0"
 HUGO_VERSION = "0.149.0"
 NODE_VERSION = "22.18.0"
-TZ = "Europe/Dublin"
+TZ = "Europe/Oslo"
 
 [build]
 publish = "public"

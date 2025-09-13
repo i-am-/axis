@@ -76,7 +76,6 @@ sections = [
   "testimonial",
   "resources",
   "articles",
-  "newsletter"
 ]
 # If you want to display an image logo in the header, you can add it here
 logo = '/img/logo-light.svg'
@@ -165,10 +164,17 @@ URL = "https://www.linkedin.com/in/imalyarenko"
 weight = 8
 
 [[languages.en.menus.header]]
-pre = "newsletter"
-name = "newsletter"
-URL = ""
+pre = "search"
+name = "Search"
+URL = "/search"
 weight = 9
+
+#[[languages.en.menus.header]]
+#pre = "user"
+#name = "Book"
+#URL = "https://cal.com/igniting-coach"
+#weight = 10
+
 
 # Plugins
 [params.plugins]
@@ -190,6 +196,9 @@ URL = "js/sticky-header.js"
 
 [[params.plugins.js]]
 URL = "js/library/fontfaceobserver.js"
+
+[[params.plugins.js]]
+URL = "js/library/purify.js"
 
 
 # SCSS Plugins
@@ -222,12 +231,12 @@ mobileHeader = false
 enabled = false  # Set to false to disable the page fade transition effect
 
 [params.blog]
-layout = "default"     # options: default (no sidebar), sidebar, sidebar-right
+layout = "sidebar-right"     # options: default (no sidebar), sidebar, sidebar-right
 sidebarWidth = "25"    # percentage width of the sidebar
-showCategories = false
-showRecentPosts = false
+showCategories = true
+showRecentPosts = true
 recentPostCount = 5
-listStyle = "simple"  # options: simple, summary
+listStyle = "summary"  # options: simple, summary
 featured_sort_by_weight = true
 featured_sort_by_date = true
 
