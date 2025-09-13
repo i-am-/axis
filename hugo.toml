@@ -222,13 +222,13 @@ mobileHeader = false
 enabled = false  # Set to false to disable the page fade transition effect
 
 [params.blog]
-layout = "sidebar"     # options: default (no sidebar), sidebar, sidebar-right
+layout = "default"     # options: default (no sidebar), sidebar, sidebar-right
 sidebarWidth = "30"    # percentage width of the sidebar
 showCategories = false
 showRecentPosts = true
 recentPostCount = 5
 listStyle = "simple"  # options: simple, summary
-featured_sort_by_weight = false
+featured_sort_by_weight = true
 featured_sort_by_date = true
 
 
