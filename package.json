@@ -11,6 +11,8 @@
     }
   },
   "dependencies": {
+    "fuse": "^0.12.1",
+    "purify": "^3.5.0",
     "purity": "^1.0.3"
   },
   "devDependencies": {

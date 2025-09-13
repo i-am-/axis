@@ -137,8 +137,8 @@ weight = 1
 #weight = 2
 
 [[languages.en.menus.header]]
-name = 'The process'
-URL = '#process'
+name = 'Method'
+URL = '#method'
 weight = 3
 
 [[languages.en.menus.header]]
@@ -185,8 +185,8 @@ URL = "css/custom.css"
 [[params.plugins.css]]
 URL = "css/adritian-icons.css"
 ## Print css
-[[params.plugins.css]]
-URL = "css/bootstrap-print.css"
+#[[params.plugins.css]]
+#URL = "css/bootstrap-print.css"
 
 # JS Plugins
 [[params.plugins.js]]
@@ -194,8 +194,12 @@ URL = "js/rad-animations.js"
 [[params.plugins.js]]
 URL = "js/sticky-header.js"
 
-#[[params.plugins.js]]
-#URL = "js/library/fontfaceobserver.js"
+[[params.plugins.js]]
+URL = "js/library/fontfaceobserver.js"
+
+[[params.plugins.js]]
+URL = "js/library/purify.js"
+
 
 # SCSS Plugins
 [[params.plugins.scss]]
@@ -224,10 +228,10 @@ mobileHeader = false
 
 # Page transition settings
 [params.pageTransition]
-enabled = true  # Set to false to disable the page fade transition effect
+enabled = false  # Set to false to disable the page fade transition effect
 
 [params.blog]
-layout = "default"     # options: default (no sidebar), sidebar, sidebar-right
+layout = "sidebar-right"     # options: default (no sidebar), sidebar, sidebar-right
 sidebarWidth = "25"    # percentage width of the sidebar
 showCategories = true
 showRecentPosts = true
