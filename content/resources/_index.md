@@ -50,13 +50,17 @@ Work Stress Inventory...
 # 2. Tools
 
 ## 2.1 The Greater Good in Action
+
 [__The Greater Good in Action__](https://ggia.berkeley.edu/) website, affiliated with the Greater Good Science Center at UC Berkeley, offers a curated collection of science-backed practices designed to improve well-being and happiness
 
 ## 2.2 Cultural dimensions
-- [__Geert Hofstede's cultural dimensions theory__](https://geerthofstede.com/country-comparison-bar-charts/) is a framework developed by the Dutch social psychologist to understand how cultural differences influence behavior and values within societies. Based on a comprehensive study of IBM employees worldwide, the model provides a systematic way to compare cultures by analyzing them across six dimensions: Power Distance, Individualism vs. Collectivism, Masculinity vs. Femininity, Uncertainty Avoidance, Long-Term vs. Short-Term Orientation, and Indulgence vs. Restraint. This influential theory has been widely applied in various fields, including international business and cross-cultural communication, to help people navigate and understand cultural diversity.
+
+[__Geert Hofstede's cultural dimensions theory__](https://geerthofstede.com/country-comparison-bar-charts/) is a framework developed by the Dutch social psychologist to understand how cultural differences influence behavior and values within societies. Based on a comprehensive study of IBM employees worldwide, the model provides a systematic way to compare cultures by analyzing them across six dimensions: Power Distance, Individualism vs. Collectivism, Masculinity vs. Femininity, Uncertainty Avoidance, Long-Term vs. Short-Term Orientation, and Indulgence vs. Restraint. This influential theory has been widely applied in various fields, including international business and cross-cultural communication, to help people navigate and understand cultural diversity.
 
 ## 2.3 Verywell Mind
-- [__Verywell Mind__](https://www.verywellmind.com/) offers expert-written, fact-checked information on a wide range of mental health and self-improvement topics.
+
+[__Verywell Mind__](https://www.verywellmind.com/) offers expert-written, fact-checked information on a wide range of mental health and self-improvement topics.
 
 ## 2.4 World Happiness Report
-- [__World Happiness Report__](https://data.worldhappiness.report/table) is an annual study that ranks countries based on how people evaluate their own lives. The report identifies six key factors strongly correlated with a person's well-being: social support, freedom to make life choices, healthy life expectancy, generosity, and the absence of corruption, in addition to economic status.
+
+[__World Happiness Report__](https://data.worldhappiness.report/table) is an annual study that ranks countries based on how people evaluate their own lives. The report identifies six key factors strongly correlated with a person's well-being: social support, freedom to make life choices, healthy life expectancy, generosity, and the absence of corruption, in addition to economic status.
