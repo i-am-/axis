@@ -24,7 +24,7 @@ draft = false
     contact_button="Send message"
     contact_address_title="My location"
     contact_address_address="Islandbridge, Dublin 8, Ireland"
-    form_action=""
+    form_action="/success"
     form_method="POST"
     contact_form_rows="3"
 >}}
