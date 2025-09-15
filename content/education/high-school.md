@@ -5,6 +5,6 @@ draft: false # set to "true" if you want to hide the content
 
 university: "St.Petersburg State University"
 year: "1998-2003"
-degree: "Specialist, Environmental Geology"
+degree: "Masters in (Environmental) Geology"
 
 ---

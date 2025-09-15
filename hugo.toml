@@ -67,12 +67,12 @@ target = "static/js/purify.min.js"
 
 [params]
 title = 'Igniting Coach'
-description = 'Coaching site'
+description = 'Your local life and career coach in Dublin 8'
 #images = ['/img/og-img.png']
 sections = [
   "home",
   "bio",
-  "process",
+  "method",
   "testimonial",
   "resources",
   "articles",
@@ -98,8 +98,8 @@ vercelAnalytics = false
 code = "UA-XXXXX-Y"
 enabled = false
 [params.analytics.googleTagManager]
-code = "GTM-XXXXX"
-enabled = false
+code = "GTM-MN7D85FC"
+enabled = true
 
 [build]
 writeStats = true

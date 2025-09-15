@@ -5,6 +5,6 @@ draft: false # set to "true" if you want to hide the content
 
 university: "PCI College"
 year: "2025-2029"
-degree: "Bachelor of Psychotherapy and Councelling"
+degree: "BSc (Hons) of Psychotherapy and Councelling"
 
 ---

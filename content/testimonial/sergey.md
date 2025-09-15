@@ -1,5 +1,5 @@
 ---
-date: '2024-11-25T21:50:45+01:00' # date in which the content is created - defaults to "today"
+date: '2025-09-03' # date in which the content is created - defaults to "today"
 title: 'Sergey Podkolzin'
 draft: false # set to "true" if you want to hide the content 
 

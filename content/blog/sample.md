@@ -6,13 +6,13 @@ type = 'blog'
 
 +++
 
-![Example image](/images/blog/oee.png)
+![Divine machine](/images/blog/oee.png)
 
 Coaching is a way to look at your life from the outside in and unveil key roadblocks that are holding you back from realising your full human potential. Imagine yourself as a perfect divine machine. Let's assume that all your basic needs are satisfied. You have a shelter, food, a partner, and a decent job. Your key resource is your <code>time</code>. You want to convert this time into things that are important and valuable to you, such as memorable experiences, fulfilling connections, happiness and joy, paintings, music, poetry, money, and so on. What are the opportunities to improve the output of your machine?
 
 This model of the 'divine machine' is based on a well-known manufacturing concept called <em>Overall Equipment Effectiveness (OEE)</em>. OEE framework measures the efficiency of a machine by breaking it down into three components: <code>Availability</code>, <code>Performance</code>, and <code>Quality</code>. By applying this same logic to ourselves, we can identify areas for personal improvement and work towards optimising our own 'machine'.
 
-<center><img src="/images/blog/oee1.png" /></center>
+![OEE](/images/blog/oee1.png)
 
 The first component, <code>Availability</code>, measures the time the machine is operational and ready to produce. For a human, this refers to the time we are physically and mentally available for productive work or activity. Availability losses are anything that causes downtime: illness, lack of sleep, burnout, or even distractions that pull us away from our goals. To maximise this metric, we must prioritise self-care, rest, nutrition, and mental health practices that keep our divine machine running without interruption. Just as a factory machine requires scheduled maintenance, so too do we need to schedule time for holidays and recovery to ensure our long-term availability.
 
