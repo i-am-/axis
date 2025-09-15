@@ -144,11 +144,8 @@
             <h2>{{ $title }}</h2>
             <div class="row pt-2">
                 <div class="col-12 col-lg-7">
-                    <form action="{{ $form_action }}" method="{{ $form_method }}" class="contact__form" data-netlify="true" netlify-honeypot="bot-field">
+                    <form action="{{ $form_action }}" method="{{ $form_method }}" class="contact__form" data-netlify="true">
                         <div class="row">
-                            <p class="d-none">
-                                <input name="bot-field" type="text" />
-                            </p>
                             <div class="col-12 col-sm-6">
                                 <input type="text" name="full_name" class="form-control" {{ $name_placeholder_attr | safeHTMLAttr }}>
                             </div>
