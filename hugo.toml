@@ -4,11 +4,6 @@ languageCode = "en"
 
 # Exclude footer section from generating list pages (index.html and index.xml)
 [outputs]
-  page = ["HTML"]
-  home = ["HTML"]
-  section = ["HTML"]
-  taxonomy = ["HTML"]
-  term = ["HTML"]
   footer = []
 
 # Explicitly prevent the footer section from generating any output
@@ -75,7 +70,7 @@ sections = [
   "method",
   "testimonial",
   "resources",
-  "articles",
+  "blog",
 ]
 # If you want to display an image logo in the header, you can add it here
 logo = '/img/logo-light.svg'
@@ -83,33 +78,19 @@ logo = '/img/logo-light.svg'
 homepageExperienceCount = 6
 
 [params.analytics]
-## Analytics parameters.
-### Supported so far: Vercel (Page Insights, Analytics)
-### And Google (Tag Manager, Analytics)
 
-# controls vercel page insights - disabled by default
-# to enable, just set to true
-vercelPageInsights = false
-vercelAnalytics = false
-
-# google analytics and tag manager. to enable, set "enabled" to true
-# and add the tracking code (UA-something for analytics, GTM-something for tag manager)
-[params.analytics.googleAnalytics]
-code = "UA-XXXXX-Y"
-enabled = false
 [params.analytics.googleTagManager]
 code = "GTM-MN7D85FC"
 enabled = true
 
 [build]
-writeStats = true
-
-[build.buildStats]
-enabledFor = ["scss"]
-disableClasses = false
-disableIDs = false
-disableTags = false
-enable = true
+  writeStats = true
+  [build.buildStats]
+    enabledFor = ["scss"]
+    disableClasses = false
+    disableIDs = false
+    disableTags = false
+    enable = true
 
 [params.languages.selector.disable]
 footer = false
@@ -147,7 +128,7 @@ URL = "/resources"
 weight = 4
 
 [[languages.en.menus.header]]
-name = "Articles"
+name = "Blog"
 URL = "/blog"
 weight = 6
 
@@ -168,12 +149,6 @@ weight = 8
 #name = "Search"
 #URL = "/search"
 #weight = 9
-
-#[[languages.en.menus.header]]
-#pre = "user"
-#name = "Book"
-#URL = "https://cal.com/igniting-coach"
-#weight = 10
 
 
 # Plugins
@@ -209,16 +184,6 @@ URL = "scss/custom.scss"
 
 # theme/color style 
 [params.colorTheme]
-
-## the following configuration would disable automatic theme selection
-#  [params.colorTheme.auto]
-#    disable = true
-#  [params.colorTheme.forced]
-#    theme = "dark"
-
-## the following parameter will disable theme override in the footer
-#  [params.colorTheme.selector.disable]
-#  footer = true
 
 [params.colorTheme.selector.disable]
 footer = false
@@ -258,6 +223,7 @@ showJobCard = true # Set to false to hide the job card
   resampleFilter = "Lanczos"
   quality = 85
   anchor = "Smart"
+  formats = ["jpeg", "png", "webp", "tiff"]
 
 [minify]
   disableCSS = false
