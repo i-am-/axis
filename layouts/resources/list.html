@@ -1,0 +1,30 @@
+{{ define "main" }}
+<section class="site-resources-section">
+    <div class="container">
+                       
+        {{ range .Params.resource_categories }}
+        <div class="row mt-5">
+            <div class="col-12">
+                <h2 class="mb-4">{{ .name }}</h2>
+                <div class="row">
+                    {{ range .resources }}
+                    <div class="col-md-6">
+                        <div class="card shadow mb-3 skill-item">
+                        <div class="card-header">
+                            <strong>{{ .name }}</strong>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{{ .description | markdownify }}</p>
+                            <a href="{{ .url }}" target="_blank" rel="noopener noreferrer"><i class="icon-{{ .icon }}"></i></a>
+                        </div>
+                        </div>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+        {{ end }}
+
+</section>
+{{ end }}
+

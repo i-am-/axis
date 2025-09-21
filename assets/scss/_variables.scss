@@ -1,0 +1,36 @@
+// Base colors
+
+$primary:   #006B7F;
+$base-color: $primary; 
+$dark-primary: #41A2B5;
+$secondary: #2F5C58;
+$success:   #28a745;
+$danger:    #ff8A4D;
+$warning:   #B08A4D;
+$info:      #17a2b8;
+$light:     #EBEAE5;
+$dark:      #292929;
+
+// Link colors and decoration
+$link-color: $primary;
+$link-hover-color: darken($link-color, 15%);
+$link-decoration: none;
+$sidebar-link-color: $dark;
+
+// Create CSS custom properties for Bootstrap
+:root {
+  --bs-link-color: #{$link-color};
+  --bs-link-color-rgb: #{red($link-color)}, #{green($link-color)}, #{blue($link-color)};
+  --bs-link-hover-color: #{$link-hover-color};
+  --bs-link-hover-color-rgb: #{red($link-hover-color)}, #{green($link-hover-color)}, #{blue($link-hover-color)};
+  --bs-link-decoration: #{$link-decoration};
+}
+
+// Explicit link override for all <a> tags
+a {
+  color: $link-color;
+ 
+  &:hover {
+    color: $link-hover-color;
+  }
+}

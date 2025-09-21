@@ -1,68 +1,34 @@
 @font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-display: swap; 
   font-family: 'Roboto Flex';
   font-style: normal;
   font-weight: 400;
-  src: url('/fonts/roboto-flex-v30-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/roboto-flex-v30-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); 
 }
 
 @font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-display: swap; 
   font-family: 'Roboto Serif';
   font-style: bold;
   font-weight: 600;
-  src: url('/fonts/roboto-serif-v16-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/roboto-serif-v16-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); 
 }
 
 @font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-display: swap;
   font-family: 'Roboto Mono';
   font-style: normal;
   font-weight: 400;
-  src: url('/fonts/roboto-mono-v30-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/roboto-mono-v30-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2') format('woff2');
 }
 
-html body {
-  font-family: "Roboto Flex", sans-serif;
-}
-
-body a, p, button, a.btn, div {
-    font-family: "Roboto Flex", sans-serif;
-}
-
-body h1, h2, h3, h4, h5, h6 {
-    font-family: "Roboto Serif", serif;
-}
-
-div h1, h2, h3, h4, h5, h6 {
-    font-family: "Roboto Serif", serif;
-}
-
-h1 a {
-    font-family: "Roboto Serif", serif;
-}
-
-
-h2.post-title a {
-    font-family: "Roboto Serif", serif;
-}
-
-
-body .navbar-brand {
-    font-family: "Roboto Serif", serif;
-}
-
-body code {
-    font-family: 'Roboto Mono', monospace;
-}
-
-body .form-control {
-    font-family: 'Roboto Mono', monospace;
-}
-
-body {
+body, div { 
+    font-family: "Roboto Flex", sans-serif; 
     text-align: left;
-}@font-face {
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: "Roboto Serif", serif; }
+@font-face {
   font-family: 'adritian-icons';
   src: url('../fonts/adritian-icons.eot?62019798');
   src: url('../fonts/adritian-icons.eot?62019798#iefix') format('embedded-opentype'),
