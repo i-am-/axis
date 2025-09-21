@@ -179,8 +179,8 @@ URL = "js/library/purify.js"
 # SCSS Plugins
 [[params.plugins.scss]]
 URL = "scss/adritian.scss"
-[[params.plugins.scss]]
-URL = "scss/custom.scss"
+#[[params.plugins.scss]]
+#URL = "scss/custom.scss"
 
 # theme/color style 
 [params.colorTheme]
