@@ -89,7 +89,25 @@ resource_categories:
         description: |
           **Geert Hofstede's cultural dimensions theory** is a framework developed by the Dutch social psychologist to understand how cultural differences influence behavior and values within societies. Based on a comprehensive study of IBM employees worldwide, the model provides a systematic way to compare cultures by analyzing them across six dimensions: Power Distance, Individualism vs. Collectivism, Masculinity vs. Femininity, Uncertainty Avoidance, Long-Term vs. Short-Term Orientation, and Indulgence vs. Restraint. This influential theory has been widely applied in various fields, including international business and cross-cultural communication, to help people navigate and understand cultural diversity.
         type: "tool"
-        icon: "circle-arrow-right"        
+        icon: "circle-arrow-right"
+      - name: "Resilience Toolkit 🌱"
+        url: "https://mind-matters.com.au/wp-content/uploads/2022/02/Resilience-Toolkit.pdf"
+        description: |
+          Resilience is your ability to adapt, bounce back, and learn from life's challenges. Think of it like building a muscle: it's a skill, not a fixed trait. This toolkit provides practical exercises and techniques to help you develop the behaviors and thought patterns that strengthen your resilience. The more you practice, the better equipped you'll be to handle stress, recover from setbacks, and grow from adversity.
+        type: "tool"
+        icon: "circle-arrow-right"
+      - name: "Stress Toolkit 🧠"
+        url: "https://mind-matters.com.au/wp-content/uploads/2022/02/Stress-Toolkit.pdf"
+        description: |
+          Stress is a natural reaction your body and mind have to changes in your environment, especially when you feel you don't have the resources to handle them. This toolkit is designed to help you understand and manage that feeling. It provides practical tools and strategies to help you navigate stressful situations, build your coping skills, and better protect your well-being. By learning to identify your triggers and build your resources, you can take control of your stress reaction.
+        type: "tool"
+        icon: "circle-arrow-right"                
+      - name: "Doors Open, Doors Closed 🚪"
+        url: "https://youngharrowfoundation.org/resources/harrow/doors-closed-doors-opened-worksheet/Handout-3-Doors-Closed-Doors-Open.pdf"
+        description: |
+          This exercise is designed to help you shift your perspective on endings and transitions. It's built on a simple yet powerful idea: when one door closes, another opens. By reflecting on past experiences, you'll see that endings aren't just about loss; they also create space for new opportunities and positive beginnings.
+        type: "tool"
+        icon: "circle-arrow-right"                        
       - name: "World Happiness Report 😊"
         url: "https://data.worldhappiness.report/table"
         description: |
@@ -97,4 +115,5 @@ resource_categories:
         type: "tool"
         icon: "circle-arrow-right"
 ---
+
 

@@ -28,7 +28,15 @@ body, div {
 }
 
 h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: "Roboto Serif", serif; }
-@font-face {
+
+.fix {
+    position: fixed;
+    bottom: 5px;
+    right: 5px; /* Change `left` to `right` and use a fixed unit */
+    z-index: 1000; /* Ensure the image is always on top */
+    max-width: 10%;
+    height: auto;
+}@font-face {
   font-family: 'adritian-icons';
   src: url('../fonts/adritian-icons.eot?62019798');
   src: url('../fonts/adritian-icons.eot?62019798#iefix') format('embedded-opentype'),
