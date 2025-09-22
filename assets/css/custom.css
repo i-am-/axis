@@ -29,11 +29,20 @@ body, div {
 
 h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: "Roboto Serif", serif; }
 
-.fix {
+.theme-image {
     position: fixed;
     bottom: 5px;
     right: 5px; /* Change `left` to `right` and use a fixed unit */
     z-index: 1000; /* Ensure the image is always on top */
-    max-width: 10%;
+    max-width: 8%;
     height: auto;
+}
+
+
+[data-bs-theme="light"] body .dark-mode-image {
+  display: none;
+}
+
+[data-bs-theme="dark"] body .light-mode-image {
+  display: none;
 }
