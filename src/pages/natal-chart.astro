@@ -48,6 +48,7 @@ import Base from '../layouts/Base.astro';
 
       <section class="natal-result" id="natal-result" hidden aria-labelledby="natal-result-title">
         <h2 id="natal-result-title" class="natal-result-title"></h2>
+        <p class="natal-result-utc" id="natal-result-utc"></p>
         <p class="natal-result-meta" id="natal-result-meta"></p>
         <div class="natal-layout">
           <div class="natal-wheel" id="natal-wheel" aria-hidden="true"></div>
@@ -82,17 +83,27 @@ import Base from '../layouts/Base.astro';
   ];
 
   interface Place {
-    name: string; region?: string; country: string;
+    name: string; region?: string; country: string; country_code: string;
     latitude: number; longitude: number; time_zone: string; matched_name: string;
   }
   interface Body { name: string; longitude: number; speed_longitude: number; formatted: string; retrograde: boolean }
   interface Positions {
-    input: { local: string; utc_offset: string };
+    input: { local: string; utc: string; utc_offset: string };
     bodies: Body[];
     houses?: { system: string; note?: string; cusps: number[]; ascendant: number; mc: number };
   }
 
   // "Moscow, Russia", not "Moscow, Moscow, Russia"
+  // flags as SVG files: Windows draws flag emoji as bare letters
+  const FLAGS = import.meta.glob<string>('../../node_modules/flag-icons/flags/4x3/*.svg',
+    { query: '?url', import: 'default', eager: true });
+  const flagURL = (cc: string) => FLAGS[`../../node_modules/flag-icons/flags/4x3/${cc.toLowerCase()}.svg`];
+
+  // 59.94° N, 30.31° E
+  const coords = (p: Place) =>
+    `${Math.abs(p.latitude).toFixed(2)}° ${p.latitude >= 0 ? 'N' : 'S'}, ` +
+    `${Math.abs(p.longitude).toFixed(2)}° ${p.longitude >= 0 ? 'E' : 'W'}`;
+
   const placeName = (p: Place) =>
     [p.name, p.region !== p.name ? p.region : '', p.country].filter(Boolean).join(', ');
 
@@ -141,13 +152,25 @@ import Base from '../layouts/Base.astro';
         li.id = `place-opt-${i}`;
         li.setAttribute('role', 'option');
         li.setAttribute('aria-selected', 'false');
+        const flag = document.createElement('img');
+        flag.className = 'place-flag';
+        flag.alt = '';                      // the country is named in the text beside it
+        flag.width = 24;
+        flag.height = 18;
+        const url = flagURL(p.country_code);
+        if (url) flag.src = url;
+        else flag.style.visibility = 'hidden';
         const name = document.createElement('span');
+        name.className = 'place-name';
         name.textContent = p.name;
         const where = document.createElement('span');
         where.className = 'place-where';
         where.textContent = [p.matched_name !== p.name ? p.matched_name : '', p.region !== p.name ? p.region : '', p.country]
           .filter(Boolean).join(' · ');
-        li.append(name, where);
+        const at = document.createElement('span');
+        at.className = 'place-coords';
+        at.textContent = coords(p);
+        li.append(flag, name, at, where);
         li.addEventListener('mousedown', (e) => { e.preventDefault(); pick(i); });
         return li;
       }));
@@ -328,8 +351,15 @@ import Base from '../layouts/Base.astro';
       const h = last.houses;
       document.getElementById('natal-result-title')!.textContent =
         `Born ${born}, ${unknown.checked ? 'time unknown' : time.value}`;
+      const utc = new Date(last.input.utc);
+      const utcDate = utc.toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
+      const utcTime = utc.toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' });
+      document.getElementById('natal-result-utc')!.textContent =
+        `In UTC: ${utcDate}, ${utcTime}. ` +
+        (unknown.checked ? `That is noon local time, which was UTC${last.input.utc_offset}.`
+                         : `Local time was UTC${last.input.utc_offset}.`);
       document.getElementById('natal-result-meta')!.textContent =
-        `${placeName(chosen)} · ${chosen.latitude.toFixed(2)}°, ${chosen.longitude.toFixed(2)}° · UTC${last.input.utc_offset} · ` +
+        `${placeName(chosen)} · ${coords(chosen)} · ` +
         (h ? `${h.system} houses${h.note ? ` (${h.note})` : ''}`
            : 'Drawn for noon. Houses and the Ascendant need a birth time, and the Moon may be up to 7° either way.');
       result.hidden = false;

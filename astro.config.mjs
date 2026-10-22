@@ -49,5 +49,10 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      // the natal chart's country flags stay files, fetched only when a
+      // place list shows them, instead of all being inlined into its script
+      assetsInlineLimit: (file) => (file.includes('/flag-icons/') ? false : undefined),
+    },
   },
 });
