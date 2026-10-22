@@ -1,0 +1,6 @@
+{{/* GoatCounter — cookieless, self-hosted on the owner's router.
+     Loaded only in production builds; disable via params.analytics.enabled = false. */}}
+{{ if and site.Params.analytics.enabled (eq hugo.Environment "production") }}
+<script data-goatcounter="{{ site.Params.analytics.url }}/count"
+        async src="{{ site.Params.analytics.url }}/count.js"></script>
+{{ end }}

@@ -1,75 +1,27 @@
-<!-- if you want to enable google tag manager you can check in your theme toml -->
-{{ if .Site.Params.analytics.googleTagManager.enabled }}
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MN7D85FC"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-{{ end }}
-
-{{ partial "skip-to-content.html" }}
-
-<header class="header fixed-top rad-animation-group" id="header">
-  <div class="container rad-fade-in">
-    <nav class="navbar bd-navbar navbar-expand-lg navbar-light p-0">
-      <div class="container-fluid">
-        <a class="navbar-brand mx-auto" href="{{ .Site.BaseURL | relLangURL }}">
-            {{ if .Site.Params.logo }}
-            <img
-            src="{{ .Site.Params.logo | absURL }}"
-            alt="{{ i18n "logo_alt" }}"
-            class="logo"
-            />
-            {{ end }}
-          <span>{{ i18n "logo_text1" }}</span>
-          <span>{{ i18n "logo_text2" }}</span>
-        </a>
-        <button
-          class="navbar-toggler collapsed"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent, #header"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-          aria-label='{{ i18n "toggle_navigation" }}'
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav ml-lg-auto">
-            {{- range .Site.Menus.header }}
-            <li class="nav-item">
-              <a data-scroll class="nav-link" href="{{ .URL | relURL }}"
-                >{{ if .Pre }}
-                  <i class="icon-{{ .Pre }}" aria-label="{{ or .Name .Pre }}"></i>
-                {{ else }}
-                  {{ .Name | upper }}
-                {{ end }}</a
-              >
-            </li>
-            {{- end }}
-            
-            {{- if hugo.IsMultilingual }} 
-            {{- if not .Site.Params.languages.selector.disable.header }}
-            {{ .Scratch.Set "selectorPlacement" "header" }}
-            {{ .Scratch.Set "dropdownDirection" "down" }}         
-            <li class="dropdown language-selector nav-item">
-            {{ partial "selector-language.html" . }}
-            </li>
-            {{- end }}
-            {{- end }}
-            {{- if not .Site.Params.colorTheme.selector.disable.header }}
-            <li class="dropdown theme-selector nav-item">
-              {{ .Scratch.Set "selectorPlacement" "header" }}
-              {{ .Scratch.Set "dropdownDirection" "down" }}  
-              {{ partial "selector-theme.html" . }}
-            </li>
-            {{- end }}
-          </ul>
-        </div>
-
-      </div>
+<header class="site-header">
+  <div class="nav-bar">
+    <a class="brand" href="{{ site.Home.RelPermalink }}" aria-label="Igniting Coach — home">
+      <img class="logo logo-light" src="{{ "img/logo-light.svg" | relURL }}" alt="Igniting Coach" width="150" height="34">
+      <img class="logo logo-dark" src="{{ "img/logo-dark.svg" | relURL }}" alt="Igniting Coach" width="150" height="34">
+    </a>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+      {{ $here := . }}
+      {{ range slice
+        (dict "url" "/about/" "name" "About")
+        (dict "url" "/method/" "name" "Method")
+        (dict "url" "/services/" "name" "Services")
+        (dict "url" "/testimonials/" "name" "Testimonials")
+        (dict "url" "/blog/" "name" "Blog")
+        (dict "url" "/contact/" "name" "Contact")
+      }}
+        <a href="{{ .url | relURL }}" {{ if eq $here.RelPermalink .url }}class="active" aria-current="page"{{ end }}>{{ .name }}</a>
+      {{ end }}
     </nav>
+    <div class="header-actions">
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle colour theme">◐</button>
+      <button id="nav-toggle" class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </header>
-
-{{- if not .IsHome }} 
-  {{ partial "breadcrumb.html" . }} 
-{{- end }}

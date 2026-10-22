@@ -1,0 +1,244 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import avatar from '../assets/face-avatar2.png';
+import { experience, education, testimonials } from '../data/orig-content';
+
+/* Current role first, then most recent. */
+const jobs = [...experience].sort((a, b) => {
+  const rank = (j: typeof a) => (j.duration.includes('NOW') ? -Infinity : -parseInt(j.duration.slice(0, 4)));
+  return rank(a) - rank(b);
+});
+
+const paths = [
+  {
+    tag: 'If it’s work',
+    title: 'Leadership & career',
+    body: 'Stepping up, changing track, or leaving well — with fifteen years of consulting behind the questions.',
+    href: '/domains/#leadership',
+  },
+  {
+    tag: 'If it’s you',
+    title: 'ADHD & impostor syndrome',
+    body: 'Strategies built for how your attention actually behaves, not how it is supposed to.',
+    href: '/domains/#neurodivergence',
+  },
+  {
+    tag: 'If it’s people',
+    title: 'Relationships & culture',
+    body: 'Working across the gap between what gets said and what gets meant, in two languages and three countries.',
+    href: '/domains/#cross-cultural',
+  },
+];
+---
+<Base title="Igniting Coach — Ilya Malyarenko" jsonld="home">
+
+  <!-- ═══ D · Field Notes: the question is the hero and the input ═══ -->
+  <section class="surface-paper ask" id="ask">
+    <div class="container">
+      <div class="ask-grid">
+        <div>
+          <span class="apparatus kicker">Coaching · Dublin &amp; online</span>
+          <h1>What’s one goal you’re <mark>hoping to achieve</mark> right now?</h1>
+          <form
+            name="goal"
+            method="POST"
+            action="/thanks/"
+            data-netlify="true"
+            netlify-honeypot="bot-field"
+            class="askbox"
+          >
+            <input type="hidden" name="form-name" value="goal" />
+            <p class="hp-field"><label>Don’t fill this out: <input name="bot-field" /></label></p>
+            <p class="note">
+              Write it in a sentence. I read every one myself and reply within two working days —
+              no intake questionnaire, no funnel.
+            </p>
+            <div class="askrow">
+              <label class="sr-only" for="goal-text">Your goal</label>
+              <input
+                type="text"
+                id="goal-text"
+                name="goal"
+                required
+                placeholder="I want to lead without pretending I’m certain…"
+              />
+              <label class="sr-only" for="goal-email">Your email</label>
+              <input type="email" id="goal-email" name="email" required placeholder="Your email" />
+              <button type="submit">Send</button>
+            </div>
+          </form>
+        </div>
+        <Image
+          src={avatar}
+          width={380}
+          height={380}
+          fit="cover"
+          position="top"
+          format="webp"
+          quality={85}
+          alt="Ilya Malyarenko"
+          class="ask-portrait"
+          loading="eager"
+          fetchpriority="high"
+        />
+      </div>
+
+      <div class="paths" style="margin-top:clamp(2.2rem,5vw,3.4rem)">
+        {paths.map((p) => (
+          <div class="path" data-reveal>
+            <span class="apparatus tag">{p.tag}</span>
+            <h3><a href={p.href}>{p.title}</a></h3>
+            <p>{p.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ A · who is asking ═══ -->
+  <section class="surface-reading section section-rule" id="about">
+    <div class="container">
+      <div class="section-head">
+        <span class="apparatus">Who is asking</span>
+        <h2>Fifteen years of asking companies the awkward question. Now I ask you.</h2>
+      </div>
+      <div class="prose" data-reveal>
+        <p>
+          I spent fifteen years as a management consultant and six more inside biopharma, most of it
+          redesigning how large organisations actually work — supply chains, ERP rollouts, Lean Six
+          Sigma programmes where the real problem was never the process diagram. What I kept
+          noticing was that the decisive conversation was always the personal one.
+        </p>
+        <p>
+          So I trained. A Diploma in Personal &amp; Business Coaching at the Irish Lifecoach Institute
+          (ICF Level&nbsp;I), and I am now three years into a BSc in Psychotherapy and Counselling at
+          PCI College. I work with people mid-change — a role, a country, a diagnosis, a marriage —
+          where the honest answer is that no template applies.
+        </p>
+        <p>
+          Sessions run in person in Dublin&nbsp;8 and online worldwide, in English or Russian.
+        </p>
+      </div>
+      <div class="callout" data-reveal>
+        <p>
+          <em>Coaching is not therapy.</em> If you want to work on your past, on trauma or grief,
+          therapy is the better place to start — you can find a therapist through the
+          <a href="https://iacp.ie/therapists" target="_blank" rel="noopener">IACP register</a>.
+          <a href="/method/">How the two differ, and what a coaching engagement involves →</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ A · experience ═══ -->
+  <section class="surface-reading section section-rule" id="experience">
+    <div class="container">
+      <div class="section-head">
+        <span class="apparatus">Professional experience</span>
+        <h2>Where the questions come from</h2>
+      </div>
+      <div class="timeline">
+        {jobs.map((job) => (
+          <div class={`tl-item${job.duration.includes('NOW') ? ' is-current' : ''}`} data-reveal>
+            <span class="apparatus when tabular">{job.duration.replace('-NOW', ' — now').replace('-', '–')}</span>
+            <h3>{job.jobTitle}, {job.company}</h3>
+            <p class="where">{job.location}</p>
+            <div class="body" set:html={job.body} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ A · education ═══ -->
+  <section class="surface-reading section section-rule" id="education">
+    <div class="container">
+      <div class="section-head">
+        <span class="apparatus">Education</span>
+        <h2>Training, in order</h2>
+      </div>
+      <div class="register">
+        {education.map((e) => (
+          <div class="reg-row" data-reveal>
+            <span class="apparatus when tabular">{e.year.replace('-', '–')}</span>
+            <div>
+              <h3>{e.degree}</h3>
+              <p>{e.university}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ A · testimonials ═══ -->
+  <section class="surface-reading section section-rule" id="testimonials">
+    <div class="container">
+      <div class="section-head">
+        <span class="apparatus">In their words</span>
+        <h2>Three clients, three different reasons</h2>
+      </div>
+      <div class="quotes">
+        {testimonials.map((t) => (
+          <figure class="quote" data-reveal>
+            <blockquote>{t.body}</blockquote>
+            <figcaption>
+              <span class="who">{t.name}</span>
+              <span class="apparatus role">{t.position}</span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ D · contact ═══ -->
+  <section class="surface-paper section section-rule" id="contact">
+    <div class="container">
+      <div class="section-head">
+        <span class="apparatus">Contact</span>
+        <h2>Or write properly, if a sentence isn’t enough</h2>
+      </div>
+      <div class="contact-grid">
+        <form
+          name="contact"
+          method="POST"
+          action="/thanks/"
+          data-netlify="true"
+          netlify-honeypot="bot-field"
+          class="contact-form"
+          data-reveal
+        >
+          <input type="hidden" name="form-name" value="contact" />
+          <p class="hp-field"><label>Don’t fill this out: <input name="bot-field" /></label></p>
+          <div class="field-pair">
+            <div>
+              <label class="apparatus" for="cf-name">Your name</label>
+              <input type="text" id="cf-name" name="full_name" required />
+            </div>
+            <div>
+              <label class="apparatus" for="cf-email">Your email</label>
+              <input type="email" id="cf-email" name="email" required />
+            </div>
+          </div>
+          <div>
+            <label class="apparatus" for="cf-msg">What you would like to work on</label>
+            <textarea id="cf-msg" name="message" rows="4" required></textarea>
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit">Send message</button>
+          </div>
+        </form>
+        <div data-reveal>
+          <div class="callout" style="margin-top:0">
+            <p><span class="apparatus">Where</span><br />Islandbridge, Dublin 8, Ireland.<br />In person, or online worldwide.</p>
+            <p><span class="apparatus">Languages</span><br />English and Russian.</p>
+            <p><span class="apparatus">First step</span><br />A chemistry call, free, about thirty minutes — for both of us to decide whether this is a fit.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</Base>

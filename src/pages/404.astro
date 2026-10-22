@@ -1,0 +1,59 @@
+---
+import Base from '../layouts/Base.astro';
+
+/* Freud's notes on the visitor, kept in his own manner */
+const notes = [
+  { term: 'Presenting complaint', body: 'A page that isn’t there. Patient appears otherwise well.' },
+  { term: 'Freud’s reading', body: 'An unconscious wish to be lost. Almost certainly something to do with your mother.' },
+  { term: 'Second opinion', body: 'A typo. Possibly an old bookmark.' },
+  { term: 'Prognosis', body: 'Excellent. Full recovery expected on clicking any of the links below.' },
+];
+
+const routes = [
+  { url: '/', name: 'Home' },
+  { url: '/method/', name: 'Method' },
+  { url: '/domains/', name: 'Domains' },
+  { url: '/resources/', name: 'Resources' },
+  { url: '/blog/', name: 'Writing' },
+];
+---
+<Base title="Sometimes a 404 is just a 404" description="That page doesn’t exist." noindex>
+  <div class="page lost">
+    <div class="container">
+      <p class="lost-code">404</p>
+      <h1>Sometimes a 404 is just a 404</h1>
+      <p class="lost-lede">
+        Strictly speaking, you haven’t arrived anywhere: this page doesn’t exist. Freud would
+        say you came looking for it on purpose and would like to spend the next six years
+        finding out why. I’d rather put the kettle on and point you at something that works.
+      </p>
+
+      <figure class="lost-figure">
+        <img
+          src="/img/freud.webp"
+          alt="Sigmund Freud in a three-piece suit, holding a cigar, looking distinctly unimpressed."
+          width="560" height="755" loading="eager" decoding="async"
+        />
+        <figcaption>
+          Sigmund Freud, photographed by Max Halberstadt, c.&nbsp;1921.
+          Not taking new clients, having died in Hampstead in 1939. The cigar, he insists,
+          is just a cigar.
+        </figcaption>
+      </figure>
+
+      <dl class="lost-notes">
+        {notes.map((n) => (
+          <div><dt>{n.term}</dt><dd>{n.body}</dd></div>
+        ))}
+      </dl>
+
+      <nav class="lost-routes" aria-label="Pages that do exist">
+        {routes.map((r) => <a href={r.url}>{r.name}</a>)}
+      </nav>
+      <p class="lost-note">
+        If a link on this site brought you here, that’s my fault and I’m terribly sorry.{' '}
+        <a href="/#ask">Tell me</a> and I’ll fix it before your tea goes cold.
+      </p>
+    </div>
+  </div>
+</Base>

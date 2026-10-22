@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import { methodHtml } from '../data/orig-content';
+
+/* The original page shipped Bootstrap table classes and a stray <quote>.
+   Strip the framework classes; the .prose rules set the table properly —
+   hierarchy carried by rule WIDTH (0.9pt / 0.4pt), as in symbolon §4. */
+const body = methodHtml
+  .replace(/ class='[^']*'/g, '')
+  .replace(/<\/?small>/g, '')
+  .replace(/<quote>/g, '<em>“')
+  .replace(/<\/quote>/g, '”</em>')
+  /* the source ends on its own call to action, which the callout below
+     repeats almost word for word — keep one of them */
+  .replace(/<p>Ready to begin your journey\?<\/p>\s*$/, '');
+---
+<Base
+  title="How coaching helps"
+  description="What coaching is, how it differs from mentoring, counselling and consulting, how long an engagement runs, and how the first conversation works."
+>
+  <div class="page">
+    <div class="container">
+      <header class="page-header">
+        <h1>How coaching helps — and when it is the wrong tool</h1>
+        <p>
+          Open, confidential conversation in which the coach asks the questions and you find the
+          answers. It can be uncomfortable. It is meant to be short.
+        </p>
+      </header>
+
+      <div class="prose lettrine" set:html={body} />
+
+      <div class="callout">
+        <p><span class="apparatus">Ready to begin?</span></p>
+        <p>
+          The first conversation is a chemistry call — free, about thirty minutes, and as much for
+          you to assess me as the reverse.
+        </p>
+        <p><a class="btn btn-primary" href="/#ask">Start a conversation</a></p>
+      </div>
+    </div>
+  </div>
+</Base>

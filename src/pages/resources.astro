@@ -1,0 +1,107 @@
+---
+import Base from '../layouts/Base.astro';
+import { resources } from '../data/orig-content';
+
+/* The source strings still carry the Hugo front-matter they were scraped
+   with — `type: "assessment"`, an icon, sometimes the next group's header.
+   That debris holds the real taxonomy, so it is parsed rather than binned. */
+function kind(raw: string): 'assessment' | 'tool' {
+  /* The source tags one item `framework` (the Wheel of Life). It sits with
+     the tools — a branch of one was thinner than the distinction was worth. */
+  return /type:\s*"?assessment/.test(raw) ? 'assessment' : 'tool';
+}
+
+function clean(raw: string) {
+  let t = raw
+    .split(/\n\s*type:\s*"/)[0]
+    .replace(/^\s+/gm, '')
+    .split('\n\n')[0]
+    .split('\n- ')[0]
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  /* A leaf is a label, not an abstract. Cut to a scannable length on a word
+     boundary, before any markup goes in, so no tag is ever split. */
+  const LIMIT = 165;
+  if (t.length > LIMIT) {
+    const cut = t.slice(0, LIMIT);
+    t = cut.slice(0, cut.lastIndexOf(' '));
+    if ((t.match(/\*\*/g)?.length ?? 0) % 2) t = t.replace(/\s*\*\*[^*]*$/, '');
+    t = t.replace(/[\s,;:—-]+$/, '') + '…';
+  } else {
+    t = t.replace(/:$/, '.');
+  }
+
+  return t
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/```(.+?)```/g, '<em>$1</em>');
+}
+
+/* Trailing emoji become a leaf mark rather than part of the name. */
+function split(name: string) {
+  const m = name.match(/^(.*?)\s*([\p{Extended_Pictographic}\u{FE0F}]+)$/u);
+  return m ? { title: m[1].trim(), mark: m[2] } : { title: name, mark: '' };
+}
+
+const items = resources.map((r) => ({
+  ...split(r.name),
+  url: r.url,
+  body: clean(r.description),
+  kind: kind(r.description),
+}));
+
+const branches = [
+  {
+    id: 'assessment',
+    name: 'Assessments',
+    note: 'Take one before we talk. They give the first session somewhere to start.',
+  },
+  {
+    id: 'tool',
+    name: 'Tools',
+    note: 'Frameworks and references for the weeks between sessions, when the work actually happens.',
+  },
+].map((b) => ({ ...b, items: items.filter((i) => i.kind === b.id) }));
+
+const host = (u: string) => new URL(u).hostname.replace(/^www\./, '');
+---
+<Base
+  title="Resources"
+  description="Assessments, frameworks and tools I point clients towards — the Big Five, the Wheel of Life, Johari, Hofstede, the Holmes–Rahe stress inventory and more."
+>
+  <div class="page">
+    <div class="container">
+      <header class="page-header">
+        <h1>What I hand people between sessions</h1>
+        <p>
+          Grouped by what each one is for. All free, all external — none of them require you
+          to work with me, and several are worth doing whether or not we ever speak.
+        </p>
+      </header>
+
+      <div class="tree">
+        {branches.map((b) => (
+          <section class="branch" aria-labelledby={`br-${b.id}`}>
+            <div class="branch-head">
+              <h2 id={`br-${b.id}`}>{b.name}</h2>
+              <span class="branch-count">{b.items.length}</span>
+              <p class="branch-note">{b.note}</p>
+            </div>
+            <div class="leaves">
+              {b.items.map((r) => (
+                <a class="leaf" href={r.url} target="_blank" rel="noopener">
+                  <span class="leaf-mark" aria-hidden="true">{r.mark}</span>
+                  <span class="leaf-title">{r.title}</span>
+                  <span class="leaf-host">{host(r.url)}</span>
+                  <span class="leaf-body" set:html={r.body} />
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </div>
+</Base>

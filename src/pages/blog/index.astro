@@ -1,0 +1,32 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const landing = await getEntry('pages', 'blog');
+const posts = (await getCollection('blog')).sort(
+  (a, b) => (b.data.date?.valueOf() ?? 0) - (a.data.date?.valueOf() ?? 0)
+);
+const fmt = (d: Date) => d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+<Base title={landing.data.title} description={landing.data.description} jsonld="page">
+  <div class="page">
+    <div class="container">
+      <header class="page-header">
+        <h1>{landing.data.title}</h1>
+        {landing.data.description && <p>{landing.data.description}</p>}
+      </header>
+
+      <div class="entries" style="max-width:48rem">
+        {posts.map((post) => (
+          <a class="entry" href={`/blog/${post.id}/`}>
+            <h2>{post.data.title}</h2>
+            {post.data.date && (
+              <time class="apparatus meta" datetime={post.data.date.toISOString()}>{fmt(post.data.date)}</time>
+            )}
+            {post.data.description && <p>{post.data.description}</p>}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,30 @@
+---
+// GoatCounter  cookieless, self-hosted at stats.igniting.coach.
+// Loaded only in production builds; disable via PUBLIC_ANALYTICS_ENABLED=false.
+const enabled = import.meta.env.PROD && import.meta.env.PUBLIC_ANALYTICS_ENABLED !== 'false';
+const url = import.meta.env.PUBLIC_ANALYTICS_URL ?? 'https://stats.igniting.coach';
+---
+{enabled && (
+  <>
+    <script data-goatcounter={`${url}/count`} async src={`${url}/count.js`}></script>
+    <script is:inline>
+      /* The site navigates with Astro's ClientRouter, so count.js only ever
+         sees the first hard load  every in-site page view after that goes
+         unrecorded. Count the subsequent ones by hand. The first
+         astro:page-load fires alongside count.js's own automatic hit, so it
+         is skipped to avoid double-counting. */
+      (function () {
+        var first = true;
+        document.addEventListener('astro:page-load', function () {
+          if (first) { first = false; return; }
+          if (!window.goatcounter || !window.goatcounter.count) return;
+          window.goatcounter.count({
+            path: location.pathname + location.search + location.hash,
+            title: document.title,
+            event: false,
+          });
+        });
+      })();
+    </script>
+  </>
+)}

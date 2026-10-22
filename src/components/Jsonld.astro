@@ -1,0 +1,76 @@
+---
+// JSON-LD structured data — ported 1:1 from the Hugo jsonld partial.
+interface Props {
+  kind: 'home' | 'post' | 'page';
+  title: string;
+  description: string;
+  meta?: Record<string, string>;
+}
+const { kind, title, description, meta = {} } = Astro.props;
+const base = Astro.site?.href ?? 'https://igniting.coach/';
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+
+let json = '';
+if (kind === 'home') {
+  json = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${base}#website`,
+        url: base,
+        name: 'Igniting Coach',
+        description,
+      },
+      {
+        '@type': 'Person',
+        '@id': `${base}#ilya`,
+        name: 'Ilya Malyarenko',
+        jobTitle: 'Life & Career Coach',
+        url: base,
+        description,
+        address: { '@type': 'PostalAddress', addressLocality: 'Dublin', addressCountry: 'IE' },
+      },
+      {
+        '@type': 'ProfessionalService',
+        '@id': `${base}#service`,
+        name: 'Igniting Coach',
+        url: base,
+        founder: { '@id': `${base}#ilya` },
+        employee: { '@id': `${base}#ilya` },
+        areaServed: 'Worldwide',
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: 'Islandbridge',
+          addressLocality: 'Dublin 8',
+          addressCountry: 'IE',
+        },
+        description:
+          'Life and career coaching — life transitions, leadership, career changes, impostor syndrome, ADHD and cross-cultural communication.',
+      },
+    ],
+  });
+} else if (kind === 'post') {
+  const datePublished = meta.datePublished ?? '';
+  json = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    datePublished,
+    dateModified: datePublished,
+    author: { '@type': 'Person', name: 'Ilya Malyarenko', url: base },
+    publisher: { '@type': 'Person', name: 'Ilya Malyarenko' },
+    mainEntityOfPage: canonical,
+  });
+} else {
+  json = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: title,
+    description,
+    url: canonical,
+  });
+}
+---
+<script type="application/ld+json" set:html={json} />

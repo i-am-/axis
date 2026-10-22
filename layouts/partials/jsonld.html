@@ -1,0 +1,25 @@
+{{ $desc := .Description | default .Params.description | default site.Params.description }}
+{{ if .IsHome }}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebSite","@id":"{{ site.BaseURL }}#website","url":"{{ site.BaseURL }}","name":"{{ site.Title }}","description":"{{ site.Params.description }}"},
+{"@type":"Person","@id":"{{ site.BaseURL }}#ilya","name":"Ilya Malyarenko","jobTitle":"Life &amp; Career Coach","url":"{{ site.BaseURL }}","description":"{{ site.Params.description }}","address":{"@type":"PostalAddress","addressLocality":"Dublin","addressCountry":"IE"}},
+{"@type":"ProfessionalService","@id":"{{ site.BaseURL }}#service","name":"Igniting Coach","url":"{{ site.BaseURL }}","founder":{"@id":"{{ site.BaseURL }}#ilya"},"employee":{"@id":"{{ site.BaseURL }}#ilya"},"areaServed":"Worldwide","address":{"@type":"PostalAddress","streetAddress":"Islandbridge","addressLocality":"Dublin 8","addressCountry":"IE"},"description":"Life and career coaching — life transitions, leadership, career changes, impostor syndrome, ADHD and cross-cultural communication."}
+]}
+</script>
+{{ else if and (eq .Section "blog") .IsPage }}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting",
+"headline":"{{ .Title }}",
+"description":"{{ $desc }}",
+"datePublished":"{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}",
+"dateModified":"{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}",
+"author":{"@type":"Person","name":"Ilya Malyarenko","url":"{{ site.BaseURL }}"},
+"publisher":{"@type":"Person","name":"Ilya Malyarenko"},
+"mainEntityOfPage":"{{ .Permalink }}"}
+</script>
+{{ else }}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","name":"{{ .Title }}","description":"{{ $desc }}","url":"{{ .Permalink }}"}
+</script>
+{{ end }}

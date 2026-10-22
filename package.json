@@ -1,29 +1,23 @@
 {
-  "comments": {
-    "dependencies": {},
-    "devDependencies": {
-      "@zetxek/adritian-theme-helper": "github.com/zetxek/adritian-free-hugo-theme",
-      "autoprefixer": "github.com/zetxek/adritian-free-hugo-theme",
-      "bootstrap": "github.com/zetxek/adritian-free-hugo-theme",
-      "bootstrap-print-css": "github.com/zetxek/adritian-free-hugo-theme",
-      "postcss": "github.com/zetxek/adritian-free-hugo-theme",
-      "postcss-cli": "github.com/zetxek/adritian-free-hugo-theme"
-    }
+  "name": "claude-igniting-coach",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
   },
   "dependencies": {
-    "d3": "^7.9.0",
-    "fuse": "^0.12.1",
-    "purify": "^3.5.0",
-    "purity": "^1.0.3"
-  },
-  "devDependencies": {
-    "@zetxek/adritian-theme-helper": "^1.0.5",
-    "autoprefixer": "^10.4.17",
-    "bootstrap": "^5.3.7",
-    "bootstrap-print-css": "^1.0.0",
-    "postcss": "^8.5.4",
-    "postcss-cli": "^11.0.0"
-  },
-  "name": "axis",
-  "version": "0.1.0"
+    "@astrojs/netlify": "^8.2.10",
+    "@astrojs/sitemap": "^3.7.4",
+    "@netlify/blobs": "^11.1.6",
+    "@tailwindcss/vite": "^4.1.11",
+    "astro": "^7.4.2",
+    "astro-mermaid": "^2.1.0",
+    "mermaid": "^11.17.2",
+    "motion": "^12.23.0",
+    "tailwindcss": "^4.1.11"
+  }
 }

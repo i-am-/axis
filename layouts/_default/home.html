@@ -1,0 +1,80 @@
+{{ define "main" }}
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-text">
+      <p class="eyebrow">Life &amp; Career Coaching · Dublin &amp; Online</p>
+      <h1>Ignite your <em>growth</em>, on your own terms.</h1>
+      <div class="lead">
+        {{ .Content }}
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="{{ "/contact/" | relURL }}">Book a discovery call</a>
+        <a class="btn btn-ghost" href="{{ "/services/" | relURL }}">Coaching domains</a>
+      </div>
+    </div>
+    <div class="hero-media">
+      {{ with resources.Get "img/face-avatar2.png" }}
+        {{ $av := .Resize "640x800 webp q85" }}
+        <img src="{{ $av.RelPermalink }}" width="{{ $av.Width }}" height="{{ $av.Height }}" alt="Ilya Malyarenko, Igniting Coach" class="hero-portrait" fetchpriority="high">
+      {{ end }}
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="help-h">
+  <div class="container">
+    <div class="section-head">
+      <h2 id="help-h">How I can help</h2>
+      <p>Coaching gives you a safe, non-judgmental space to re-examine beliefs, assumptions and goals — and to find your own answers.</p>
+    </div>
+    <div class="card-grid">
+      <a class="card" data-reveal href="{{ "/services/" | relURL }}">
+        <p class="card-meta">Life transitions</p>
+        <h3>Life 🎭</h3>
+        <p>Clarity and growth through life's biggest challenges — and a life you feel excited about.</p>
+      </a>
+      <a class="card" data-reveal href="{{ "/services/" | relURL }}">
+        <p class="card-meta">Leadership &amp; career</p>
+        <h3>Career &amp; Leadership 🤝</h3>
+        <p>Navigating career transitions and thriving through corporate change and dysfunction.</p>
+      </a>
+      <a class="card" data-reveal href="{{ "/services/" | relURL }}">
+        <p class="card-meta">Self-worth</p>
+        <h3>Impostor syndrome 🏆</h3>
+        <p>Finding self-worth and self-acceptance — and turning self-doubt into fuel.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" aria-labelledby="quotes-h">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <h2 id="quotes-h">What clients say</h2>
+    </div>
+    <div class="quote-grid">
+      <figure class="quote">
+        <blockquote>“He helped me address several career-related issues, and our work together was crucial in supporting me as I transitioned into my new role.”</blockquote>
+        <figcaption><span class="who">Dmitriy Chepyzhov</span><br><span class="role">Head of Analytics</span></figcaption>
+      </figure>
+      <figure class="quote">
+        <blockquote>“Coaching provided me with a fresh perspective on familiar topics and helped me adjust life strategies that no longer served me well.”</blockquote>
+        <figcaption><span class="who">Maria Em</span><br><span class="role">Independent Film Director</span></figcaption>
+      </figure>
+      <figure class="quote">
+        <blockquote>“I have worked with many coaches in the past, and he stands out as the best by far.”</blockquote>
+        <figcaption><span class="who">Sergey Podkolzin</span><br><span class="role">Management Consultant</span></figcaption>
+      </figure>
+    </div>
+    <p style="margin-top:1.5rem"><a class="btn btn-ghost" href="{{ "/testimonials/" | relURL }}">Read all testimonials</a></p>
+  </div>
+</section>
+
+<section class="section cta-band">
+  <div class="container" data-reveal>
+    <h2>What’s one goal you’re hoping to achieve <em>right now</em>?</h2>
+    <p>The journey begins with a free, no-obligation discovery call.</p>
+    <a class="btn btn-primary" href="{{ "/contact/" | relURL }}">Let's talk</a>
+  </div>
+</section>
+{{ end }}

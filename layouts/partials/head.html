@@ -1,0 +1,50 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+{{/* FOUC-free theme init (runs before paint) */}}
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme") || "auto";
+      document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  })();
+</script>
+
+{{ $desc := .Description | default .Params.description | default site.Params.description }}
+<title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} · {{ site.Title }}{{ end }}</title>
+<meta name="description" content="{{ $desc }}">
+<link rel="canonical" href="{{ .Permalink }}">
+<meta name="generator" content="Hugo {{ hugo.Version }}">
+<meta name="theme-color" content="#006B7F">
+
+{{/* Open Graph / Twitter cards */}}
+{{ $og := "" }}
+{{ with .Params.ogImage }}
+  {{ $og = . }}
+{{ else }}
+  {{ with resources.Get "img/face-avatar2.png" }}
+    {{ $og = (.Fill "1200x630 webp q80").Permalink }}
+  {{ end }}
+{{ end }}
+<meta property="og:site_name" content="{{ site.Title }}">
+<meta property="og:title" content="{{ .Title | default site.Title }}">
+<meta property="og:description" content="{{ $desc }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
+{{ with $og }}<meta property="og:image" content="{{ . }}">{{ end }}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ .Title | default site.Title }}">
+<meta name="twitter:description" content="{{ $desc }}">
+
+<link rel="icon" href="{{ "img/favicon.ico" | relURL }}">
+
+{{/* Self-hosted fonts — preload the two used above the fold */}}
+<link rel="preload" href="{{ "fonts/roboto-flex-v30-cyrillic_cyrillic-ext_latin_latin-ext-regular.woff2" | relURL }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ "fonts/fraunces-var.woff2" | relURL }}" as="font" type="font/woff2" crossorigin>
+
+{{/* Single small stylesheet, inlined — zero render-blocking requests */}}
+{{ $css := resources.Get "css/main.css" | minify }}
+<style>{{ $css.Content | safeCSS }}</style>
+
+{{ partial "jsonld.html" . }}

@@ -1,0 +1,178 @@
+---
+import Base from '../layouts/Base.astro';
+
+/* Seven domains, grouped the way the site already splits them:
+   work / you / people. The skill bars are gone deliberately — a
+   progress bar asks a client to read a coach's competence as a
+   percentage. Named scope does the job honestly instead. */
+const groups = [
+  {
+    id: 'work',
+    name: 'If it’s work',
+    note: 'Where the job is the presenting problem, whether or not it turns out to be the real one.',
+    domains: [
+      {
+        id: 'leadership',
+        name: 'Leadership',
+        lede: 'Stepping up, or stepping out, without losing the plot.',
+        body: 'Ten years leading programmes inside PwC and AstraZeneca. The recurring question is not how to be more decisive — it is how to stay recognisably yourself while carrying other people’s expectations.',
+        brings: 'A promotion that feels like a costume. A team you inherited. A decision you keep deferring.',
+      },
+      {
+        id: 'career',
+        name: 'Career',
+        lede: 'Changing track, or making the current one bearable.',
+        body: 'We map what the next role actually needs to give you, separate that from what you have been told to want, and build the sequence of moves that gets there.',
+        brings: 'A field you have outgrown. An offer you cannot read. Fifteen years in and no idea what is next.',
+      },
+    ],
+  },
+  {
+    id: 'you',
+    name: 'If it’s you',
+    note: 'Where the obstacle travels with you between jobs, cities and relationships.',
+    domains: [
+      {
+        id: 'life',
+        name: 'Life transitions',
+        lede: 'Clarity through the changes that don’t come with instructions.',
+        body: 'A move, a separation, a diagnosis, a role that no longer fits. The work is rarely about deciding faster — it is about seeing what you are actually choosing between, and what you would regret.',
+        brings: 'A country you did not plan to stay in. A chapter that closed without warning.',
+      },
+      {
+        id: 'impostor',
+        name: 'Impostor syndrome',
+        lede: 'When the evidence of competence stops landing.',
+        body: 'Common in people who moved country, changed field, or arrived somewhere faster than their peers. The goal is not more confidence; it is a working relationship with your own track record.',
+        brings: 'Praise that slides off. A promotion you are sure was a clerical error.',
+      },
+      {
+        id: 'neurodivergence',
+        name: 'ADHD and neurodivergence',
+        lede: 'Strategies built for how your attention actually behaves.',
+        body: 'Systems that survive contact with a real calendar, and a way of talking about accommodation at work that doesn’t require you to apologise for how you think.',
+        brings: 'A diagnosis at forty. Every productivity system, tried and abandoned.',
+      },
+    ],
+  },
+  {
+    id: 'people',
+    name: 'If it’s people',
+    note: 'Where the difficulty lives in the space between you and someone else.',
+    domains: [
+      {
+        id: 'cross-cultural',
+        name: 'Cross-cultural communication',
+        lede: 'The gap between what gets said and what gets meant.',
+        body: 'Nine years working across Russia, Ireland and EMEA teams. Useful when you have relocated, when you manage across cultures, or when feedback keeps landing differently than you intended.',
+        brings: 'Directness read as rudeness. Politeness read as agreement.',
+      },
+      {
+        id: 'relationships',
+        name: 'Relationships',
+        lede: 'The conversations you keep rehearsing and never having.',
+        body: 'Coaching works here on patterns and choices. Where the material is trauma or grief, therapy is the right room — I will say so, and help you find it.',
+        brings: 'The same argument, in a new relationship. A boundary you cannot hold.',
+      },
+    ],
+  },
+];
+
+const flat = groups.flatMap((g) => g.domains.map((d) => ({ ...d, group: g.id })));
+---
+<Base
+  title="Coaching domains"
+  description="The seven areas I coach in — life transitions, leadership, career, impostor syndrome, ADHD and neurodivergence, cross-cultural communication and relationships."
+>
+  <div class="page">
+    <div class="container">
+      <header class="page-header">
+        <h1>Seven areas, and the honest scope of each</h1>
+        <p>
+          What people actually bring to a first session. Where coaching is the wrong instrument,
+          that is said here rather than discovered in session four.
+        </p>
+      </header>
+
+      <div class="domains">
+        <!-- rail: jump to any domain, current one marked -->
+        <nav class="rail" aria-label="Coaching domains">
+          {groups.map((g) => (
+            <div class="rail-group">
+              <span class="rail-head">{g.name}</span>
+              <ul>
+                {g.domains.map((d) => (
+                  <li><a href={`#${d.id}`} data-rail={d.id}>{d.name}</a></li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <a class="rail-cta" href="/#ask">Not sure which?</a>
+        </nav>
+
+        <div class="domain-list">
+          {groups.map((g) => (
+            <section class="cluster" id={g.id} aria-labelledby={`cl-${g.id}`}>
+              <div class="cluster-head">
+                <h2 id={`cl-${g.id}`}>{g.name}</h2>
+                <p>{g.note}</p>
+              </div>
+              {g.domains.map((d) => (
+                <article class="domain" id={d.id} tabindex="-1">
+                  <h3>{d.name}</h3>
+                  <p class="domain-lede">{d.lede}</p>
+                  <p class="domain-body">{d.body}</p>
+                  <p class="domain-brings"><span>People arrive with</span>{d.brings}</p>
+                </article>
+              ))}
+            </section>
+          ))}
+
+          <div class="callout">
+            <p>
+              Not sure which of these it is? That is the normal place to start —
+              <a href="/#ask">put a number on where you are</a> and we will work out the shape of
+              it together.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Mark the domain currently in view on the rail. Falls back to plain
+    // anchors everywhere this does not run.
+    function initRail() {
+      const links = new Map<string, HTMLAnchorElement>();
+      document.querySelectorAll<HTMLAnchorElement>('[data-rail]').forEach((a) =>
+        links.set(a.dataset.rail!, a)
+      );
+      if (!links.size) return;
+
+      const targets = [...links.keys()]
+        .map((id) => document.getElementById(id))
+        .filter((el): el is HTMLElement => !!el);
+
+      let current = '';
+      const mark = (id: string) => {
+        if (id === current) return;
+        links.get(current)?.removeAttribute('aria-current');
+        links.get(id)?.setAttribute('aria-current', 'true');
+        current = id;
+      };
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible[0]) mark(visible[0].target.id);
+        },
+        { rootMargin: '-20% 0px -65% 0px', threshold: 0 }
+      );
+      targets.forEach((t) => io.observe(t));
+    }
+    document.addEventListener('astro:page-load', initRail);
+  </script>
+</Base>

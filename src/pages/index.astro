@@ -1,0 +1,381 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import avatar from '../assets/face-avatar2.png';
+import { experience, education, testimonials } from '../data/orig-content';
+import { viewBox as torchBox, paths as torchPaths, flame, flameBase } from '../data/torchbearer';
+
+const jobs = [...experience].sort((a, b) => {
+  const rank = (j: typeof a) => (j.duration.includes('NOW') ? -Infinity : -parseInt(j.duration.slice(0, 4)));
+  return rank(a) - rank(b);
+});
+
+/* A coaching engagement really is a sequence, so it is numbered. */
+const phases = [
+  {
+    title: 'Take the baseline',
+    body: 'A free chemistry call, about thirty minutes. We name the one thing you want to move and put a number on where it sits today.',
+    when: 'Week one · no charge',
+  },
+  {
+    title: 'Do the work',
+    body: 'Four to eight sessions, two to eight weeks apart. The gap matters as much as the session — that is where the thinking lands.',
+    when: 'Weeks two to twelve',
+  },
+  {
+    title: 'Take it again',
+    body: 'Same question, same scale. If the number has not moved by session five, we say so and you take that to a different coach or a different modality.',
+    when: 'At session five, and at the end',
+  },
+];
+---
+<Base title="Igniting Coach — Ilya Malyarenko" jsonld="home">
+
+  <!-- ═══ The instrument: a scaling question, which is how a
+       coaching engagement actually opens. The answer lights the
+       torch from the logo. ═══ -->
+  <section class="instrument" id="ask">
+    <div class="container torch-grid">
+      <div class="torch-copy">
+        <h1>How close are you to the thing you actually want?</h1>
+        <p class="sub">
+          Coaches ask this in the first session and again in the last. Set it now — the number
+          is the only part of a first conversation you can do without me.
+        </p>
+
+        <form
+          class="gauge"
+          name="baseline"
+          method="POST"
+          action="/thanks/"
+          data-netlify="true"
+          netlify-honeypot="bot-field"
+        >
+          <input type="hidden" name="form-name" value="baseline" />
+          <p class="hp-field"><label>Leave this empty: <input name="bot-field" /></label></p>
+
+          <div class="gauge-top">
+            <label class="gauge-label" for="scale">
+              One is nowhere near it. Ten is already there.
+            </label>
+            <div class="readout" aria-hidden="true">
+              <span class="readout-value" id="readout">4</span>
+              <span class="readout-scale">of 10</span>
+            </div>
+          </div>
+
+          <div class="gauge-track">
+            <input
+              type="range" class="scale" id="scale" name="baseline_score"
+              min="1" max="10" step="1" value="4"
+              aria-describedby="readout-text"
+            />
+            <div class="ticks" aria-hidden="true" id="ticks">
+              {[1,2,3,4,5,6,7,8,9,10].map((n) => <span data-tick={n}>{n}</span>)}
+            </div>
+            <p class="sr-only" id="readout-text" aria-live="polite">Your baseline: 4 out of 10.</p>
+          </div>
+
+          <div class="gauge-form">
+            <label class="sr-only" for="email">Your email</label>
+            <input type="email" id="email" name="email" required placeholder="Your email" />
+            <button class="btn btn-primary" type="submit">Send my number</button>
+          </div>
+          <p class="gauge-note">
+            I reply myself within two working days, with one question back.
+          </p>
+        </form>
+      </div>
+
+      <div class="torch" aria-hidden="true">
+        <span class="torch-flame"></span>
+        <svg class="torch-figure" viewBox={torchBox} style={`--n:${torchPaths.length}`}>
+          <defs>
+            <linearGradient id="flame-outer" gradientUnits="userSpaceOnUse" x1="0" y1="340" x2="0" y2="140">
+              <stop offset="0" stop-color="#B8892B" />
+              <stop offset=".45" stop-color="#C0612A" />
+              <stop offset=".8" stop-color="#800000" stop-opacity=".85" />
+              <stop offset="1" stop-color="#800000" stop-opacity="0" />
+            </linearGradient>
+            <linearGradient id="flame-body" gradientUnits="userSpaceOnUse" x1="0" y1="340" x2="0" y2="215">
+              <stop offset="0" stop-color="#E2B04A" />
+              <stop offset=".7" stop-color="#D08A2C" />
+              <stop offset="1" stop-color="#C0612A" stop-opacity="0" />
+            </linearGradient>
+            <radialGradient id="flame-core" gradientUnits="userSpaceOnUse" cx="517" cy="318" r="48">
+              <stop offset="0" stop-color="#FFF8E6" />
+              <stop offset=".6" stop-color="#F5E3B0" />
+              <stop offset="1" stop-color="#E9C46A" stop-opacity="0" />
+            </radialGradient>
+            <!-- ragged, soft edges: fire never has a clean outline -->
+            <filter id="flame-edge" x="-30%" y="-30%" width="160%" height="160%">
+              <feTurbulence type="fractalNoise" baseFrequency=".035 .06" numOctaves="2" seed="4" />
+              <feDisplacementMap in="SourceGraphic" scale="5" xChannelSelector="R" yChannelSelector="G" />
+              <feGaussianBlur stdDeviation="2" />
+            </filter>
+          </defs>
+          <g class="flame" style={`transform-origin:${flameBase}`} filter="url(#flame-edge)">
+            {flame.map((f) => (
+              <path class={`flame-${f.layer}`} d={f.frames[0]} fill={`url(#flame-${f.layer})`}>
+                <animate attributeName="d" dur={f.dur} repeatCount="indefinite"
+                  values={[...f.frames, f.frames[0]].join(';')}
+                  calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1;.45 0 .55 1" />
+              </path>
+            ))}
+          </g>
+          <g class="man">
+            {torchPaths.map((p, i) => (
+              <path d={p.d} pathLength="1" style={`--i:${i};--d:${p.dist}`} />
+            ))}
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="light-wave" aria-hidden="true"><span></span></div>
+  </section>
+
+  <!-- ═══ How the engagement runs — a real sequence ═══ -->
+  <section class="section" id="method">
+    <div class="container">
+      <div class="section-head">
+        <h2>About three months, three moves</h2>
+        <p>
+          I spent fifteen years running change programmes for large organisations. The method
+          transfers: measure, intervene, measure again. What changes is that you set the measure.
+        </p>
+      </div>
+      <div class="phases">
+        {phases.map((p, i) => (
+          <div class="phase">
+            <span class="phase-n">{i + 1}</span>
+            <h3>{p.title}</h3>
+            <p>{p.body}</p>
+            <span class="when">{p.when}</span>
+          </div>
+        ))}
+      </div>
+      <p style="margin-top:1.8rem"><a href="/method/">What coaching is, and when it is the wrong tool</a></p>
+    </div>
+  </section>
+
+  <!-- ═══ Who is asking ═══ -->
+  <section class="section section-plate" id="about">
+    <div class="container">
+      <div class="about-grid">
+      <div>
+      <div class="section-head">
+        <h2>Fifteen years of asking companies the awkward question</h2>
+      </div>
+      <div class="prose">
+        <p>
+          Most of my career was spent redesigning how large organisations work — supply chains,
+          ERP rollouts, Lean Six Sigma programmes where the real problem was never the process
+          diagram. What I kept noticing was that the decisive conversation was always the
+          personal one.
+        </p>
+        <p>
+          So I trained: a Diploma in Personal &amp; Business Coaching at the Irish Lifecoach
+          Institute (ICF Level&nbsp;I), and now three years into a BSc in Psychotherapy and
+          Counselling at PCI College. Sessions run in person in Dublin&nbsp;8 and online
+          worldwide, in English or Russian.
+        </p>
+      </div>
+      </div>
+      <Image src={avatar} width={300} height={300} fit="cover" position="top" format="webp"
+             quality={85} alt="Ilya Malyarenko" class="portrait" loading="lazy" />
+      </div>
+      <div class="facts">
+        <div class="fact"><b>15</b><span>years in management consulting, PwC Moscow and Dublin</span></div>
+        <div class="fact"><b>6</b><span>years in biopharma supply chain at AstraZeneca</span></div>
+        <div class="fact"><b>2</b><span>languages, English and Russian</span></div>
+        <div class="fact"><b>0</b><span>cost for the first conversation</span></div>
+      </div>
+      <div class="callout">
+        <p>
+          <em>Coaching is not therapy.</em> If the work is your past, trauma or grief, therapy is
+          the right room to start in — the <a href="https://iacp.ie/therapists" target="_blank" rel="noopener">IACP register</a>
+          will find you someone. I will say so in the first call rather than in session four.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Chronology ═══ -->
+  <section class="section" id="experience">
+    <div class="container">
+      <div class="section-head"><h2>Where the questions come from</h2></div>
+      <div class="timeline">
+        {jobs.map((job) => (
+          <div class={`tl-item${job.duration.includes('NOW') ? ' is-current' : ''}`}>
+            <span class="when">{job.duration.replace('-NOW', '–now').replace('-', '–')}</span>
+            <h3>{job.jobTitle}, {job.company}</h3>
+            <p class="where">{job.location}</p>
+            <div class="body" set:html={job.body} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Training ═══ -->
+  <section class="section section-plate" id="education">
+    <div class="container">
+      <div class="section-head"><h2>Training</h2></div>
+      <div class="register">
+        {education.map((e) => (
+          <div class="reg-row">
+            <span class="when">{e.year.replace('-', '–')}</span>
+            <div>
+              <h3>{e.degree}</h3>
+              <p>{e.university}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Clients ═══ -->
+  <section class="section" id="testimonials">
+    <div class="container">
+      <div class="section-head"><h2>Three clients, three different reasons</h2></div>
+      <div class="quotes">
+        {testimonials.map((t) => (
+          <figure class="quote">
+            <blockquote>{t.body}</blockquote>
+            <figcaption>
+              <span class="who">{t.name}</span>
+              <span class="role">{t.position}</span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Contact ═══ -->
+  <section class="section section-plate" id="contact">
+    <div class="container">
+      <div class="section-head">
+        <h2>Or write properly, if a number isn’t enough</h2>
+      </div>
+      <div class="contact-grid">
+        <form name="contact" method="POST" action="/thanks/" data-netlify="true" netlify-honeypot="bot-field" class="contact-form">
+          <input type="hidden" name="form-name" value="contact" />
+          <p class="hp-field"><label>Leave this empty: <input name="bot-field" /></label></p>
+          <div class="field-pair">
+            <div>
+              <label for="cf-name">Your name</label>
+              <input type="text" id="cf-name" name="full_name" required />
+            </div>
+            <div>
+              <label for="cf-email">Your email</label>
+              <input type="email" id="cf-email" name="email" required />
+            </div>
+          </div>
+          <div>
+            <label for="cf-msg">What you would like to work on</label>
+            <textarea id="cf-msg" name="message" rows="4" required></textarea>
+          </div>
+          <div><button class="btn btn-primary" type="submit">Send message</button></div>
+        </form>
+        <div class="callout" style="margin:0">
+          <p><strong>Islandbridge, Dublin 8</strong><br />In person, or online worldwide.</p>
+          <p>English and Russian.</p>
+          <p>First conversation is free and lasts about thirty minutes — as much for you to assess me as the reverse.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // The page's one orchestrated moment: the wireframe draws itself, the
+    // torch ignites and settles on the resting value, then light goes out
+    // from the flame. After that the torch only answers the visitor: each
+    // new reading sends light sized to it.
+    // Light is a wave rolling across the screen — or, for visitors who ask
+    // their system for reduced motion, a glow that rises and fades in place
+    // over the hero. Nothing travels for them, but nothing is frozen either.
+    function initGauge() {
+      const hero = document.getElementById('ask');
+      const scale = document.getElementById('scale') as HTMLInputElement | null;
+      const out = document.getElementById('readout');
+      const live = document.getElementById('readout-text');
+      const ticks = document.getElementById('ticks');
+      const flame = hero?.querySelector<HTMLElement>('.torch-flame');
+      const wave = hero?.querySelector<HTMLElement>('.light-wave');
+      const figure = hero?.querySelector<SVGSVGElement>('.torch-figure');
+      if (!hero || !scale || !out || !ticks || !flame || !wave || !figure) return;
+
+      const paint = (v: number) => {
+        out.textContent = String(v);
+        if (live) live.textContent = `Your baseline: ${v} out of 10.`;
+        hero.style.setProperty('--v', String((v - 1) / 9));
+        ticks.querySelectorAll<HTMLElement>('span').forEach((t) => {
+          t.classList.toggle('on', Number(t.dataset.tick) <= v);
+        });
+      };
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // the flame flickers for good — or, with reduced motion, for a few
+      // seconds after it lights or answers a reading, then holds still
+      let still: ReturnType<typeof setTimeout> | undefined;
+      const flicker = (ms: number) => {
+        if (!reduced) return;
+        figure.unpauseAnimations();
+        clearTimeout(still);
+        still = setTimeout(() => figure.pauseAnimations(), ms);
+      };
+      flicker(8000);
+
+      // the wave starts at the flame and reaches the far corner of the screen;
+      // the reduced-motion glow is centred on the flame within the hero
+      const sendLight = (strength: number) => {
+        const r = flame.getBoundingClientRect();
+        const h = hero.getBoundingClientRect();
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        const reach = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+        wave.style.setProperty('--x', `${x}px`);
+        wave.style.setProperty('--y', `${y}px`);
+        wave.style.setProperty('--reach', `${reach * 2}px`);
+        hero.style.setProperty('--gx', `${x - h.left}px`);
+        hero.style.setProperty('--gy', `${y - h.top}px`);
+        hero.style.setProperty('--strength', String(strength));
+        hero.classList.remove('is-waving');
+        void hero.offsetWidth;            // restart the CSS animations
+        hero.classList.add('is-waving');
+        flicker(4000);
+      };
+
+      scale.addEventListener('input', () => paint(Number(scale.value)));
+      scale.addEventListener('change', () => sendLight(.35 + .65 * (Number(scale.value) - 1) / 9));
+
+      if (scale.dataset.settled) {
+        hero.classList.add('is-lit');
+        paint(Number(scale.value));
+        return;
+      }
+      scale.dataset.settled = '1';
+
+      const target = Number(scale.value);
+      scale.value = '1';
+      paint(1);
+      const at = (ms: number, fn: () => void) => setTimeout(fn, ms);
+      hero.classList.add('is-drawing');                 // 0–1.3s: the man draws, feet to torch
+      at(1300, () => {
+        hero.classList.add('is-lit');                   // 1.3s: the torch ignites
+        let v = 1;
+        const step = () => {
+          v += 1;
+          scale.value = String(v);
+          paint(v);
+          if (v < target) setTimeout(step, 110);
+          else at(reduced ? 200 : 120, () => sendLight(1));   // then the light goes out
+        };
+        setTimeout(step, 260);
+      });
+    }
+    document.addEventListener('astro:page-load', initGauge);
+  </script>
+</Base>

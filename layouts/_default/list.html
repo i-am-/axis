@@ -1,0 +1,18 @@
+{{ define "main" }}
+<div class="page container">
+  <header class="page-header">
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p class="page-desc">{{ . }}</p>{{ end }}
+  </header>
+  {{ .Content }}
+  <div class="post-list">
+    {{ range .Pages }}
+    <article class="post-card">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2 January 2006" }}</time>
+      <a href="{{ .RelPermalink }}"><h2>{{ .Title }}</h2></a>
+      {{ with .Description }}<p>{{ . }}</p>{{ end }}
+    </article>
+    {{ end }}
+  </div>
+</div>
+{{ end }}

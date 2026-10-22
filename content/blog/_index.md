@@ -1,5 +1,4 @@
 ---
 title: "Blog"
-date: 2023-01-01
-draft: false
+description: "Notes on coaching, performance and finding your purpose."
 ---
