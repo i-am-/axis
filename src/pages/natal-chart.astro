@@ -1,0 +1,348 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="Natal chart"
+  description="Draw a natal chart from your date, time and place of birth, calculated with the Swiss Ephemeris from NASA JPL's DE441 data."
+>
+  <div class="page natal">
+    <div class="container">
+      <header class="page-header">
+        <h1>Natal chart</h1>
+        <p>
+          Enter when and where you were born. Positions are calculated for that exact place on
+          Earth with the Swiss Ephemeris, from NASA JPL’s DE441 planetary data.
+        </p>
+      </header>
+
+      <form class="natal-form" id="natal-form" novalidate>
+        <div class="natal-fields">
+          <div>
+            <label for="birth-date">Date of birth</label>
+            <input type="date" id="birth-date" required min="1000-01-01" max="2999-12-31" />
+          </div>
+          <div>
+            <label for="birth-time">Time of birth, local</label>
+            <input type="time" id="birth-time" required step="60" value="12:00" />
+            <label class="check-label">
+              <input type="checkbox" id="time-unknown" /> I don’t know the time
+            </label>
+          </div>
+          <div class="place-field">
+            <label for="birth-place" id="birth-place-label">Place of birth</label>
+            <input
+              type="text" id="birth-place" required autocomplete="off" spellcheck="false"
+              role="combobox" aria-autocomplete="list" aria-expanded="false"
+              aria-controls="place-list" aria-describedby="place-hint"
+              placeholder="Start typing a town or city"
+            />
+            <ul id="place-list" role="listbox" aria-labelledby="birth-place-label" hidden></ul>
+            <p id="place-hint" class="field-hint">Any language: Dublin, Baile Átha Cliath, Дублин.</p>
+          </div>
+        </div>
+        <div class="natal-actions">
+          <button class="btn btn-primary" type="submit">Draw my chart</button>
+          <p class="natal-status" id="natal-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <section class="natal-result" id="natal-result" hidden aria-labelledby="natal-result-title">
+        <h2 id="natal-result-title" class="natal-result-title"></h2>
+        <p class="natal-result-meta" id="natal-result-meta"></p>
+        <div class="natal-layout">
+          <div class="natal-wheel" id="natal-wheel" aria-hidden="true"></div>
+          <table class="natal-table" id="natal-table">
+            <caption class="sr-only">Planetary positions</caption>
+            <thead><tr><th scope="col">Body</th><th scope="col">Position</th><th scope="col">House</th></tr></thead>
+            <tbody id="natal-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="natal-credit">
+        Place names © <a href="https://www.geonames.org/">GeoNames</a>, CC BY 4.0. Chart drawn with{' '}
+        <a href="https://github.com/AstroDraw/AstroChart">AstroChart</a>.
+      </p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import { Chart, AspectCalculator } from '@astrodraw/astrochart';
+
+  const API = (import.meta.env.PUBLIC_EPHEM_API ?? 'https://stats.igniting.coach/ephem').replace(/\/$/, '');
+
+  // the API's bodies, as AstroChart names and draws them
+  const BODIES: [api: string, chart: string, label: string][] = [
+    ['sun', 'Sun', 'Sun'], ['moon', 'Moon', 'Moon'], ['mercury', 'Mercury', 'Mercury'],
+    ['venus', 'Venus', 'Venus'], ['mars', 'Mars', 'Mars'], ['jupiter', 'Jupiter', 'Jupiter'],
+    ['saturn', 'Saturn', 'Saturn'], ['uranus', 'Uranus', 'Uranus'], ['neptune', 'Neptune', 'Neptune'],
+    ['pluto', 'Pluto', 'Pluto'], ['true_node', 'NNode', 'North Node'], ['mean_lilith', 'Lilith', 'Lilith'],
+    ['chiron', 'Chiron', 'Chiron'],
+  ];
+
+  interface Place {
+    name: string; region?: string; country: string;
+    latitude: number; longitude: number; time_zone: string; matched_name: string;
+  }
+  interface Body { name: string; longitude: number; speed_longitude: number; formatted: string; retrograde: boolean }
+  interface Positions {
+    input: { local: string; utc_offset: string };
+    bodies: Body[];
+    houses?: { system: string; note?: string; cusps: number[]; ascendant: number; mc: number };
+  }
+
+  // "Moscow, Russia", not "Moscow, Moscow, Russia"
+  const placeName = (p: Place) =>
+    [p.name, p.region !== p.name ? p.region : '', p.country].filter(Boolean).join(', ');
+
+  async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
+    const res = await fetch(url, { signal });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error ?? `The calculation service answered ${res.status}.`);
+    return body as T;
+  }
+
+  // ---- the place search: a combobox that narrows as the visitor types
+
+  function initPlace(input: HTMLInputElement, list: HTMLUListElement, onPick: (p: Place | null) => void) {
+    let places: Place[] = [];
+    let active = -1;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let pending: AbortController | undefined;
+
+    const close = () => {
+      list.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      active = -1;
+    };
+
+    const highlight = (i: number) => {
+      active = i;
+      list.querySelectorAll('li').forEach((li, j) => li.setAttribute('aria-selected', String(j === i)));
+      if (i >= 0) {
+        input.setAttribute('aria-activedescendant', `place-opt-${i}`);
+        list.children[i]?.scrollIntoView({ block: 'nearest' });
+      } else input.removeAttribute('aria-activedescendant');
+    };
+
+    const pick = (i: number) => {
+      const p = places[i];
+      if (!p) return;
+      input.value = placeName(p);
+      onPick(p);
+      close();
+    };
+
+    const render = () => {
+      list.replaceChildren(...places.map((p, i) => {
+        const li = document.createElement('li');
+        li.id = `place-opt-${i}`;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', 'false');
+        const name = document.createElement('span');
+        name.textContent = p.name;
+        const where = document.createElement('span');
+        where.className = 'place-where';
+        where.textContent = [p.matched_name !== p.name ? p.matched_name : '', p.region !== p.name ? p.region : '', p.country]
+          .filter(Boolean).join(' · ');
+        li.append(name, where);
+        li.addEventListener('mousedown', (e) => { e.preventDefault(); pick(i); });
+        return li;
+      }));
+      if (!places.length) {
+        const li = document.createElement('li');
+        li.className = 'place-empty';
+        li.textContent = 'No town or city by that name. Try its spelling in another language.';
+        list.replaceChildren(li);
+      }
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      highlight(-1);
+    };
+
+    const search = async (q: string) => {
+      pending?.abort();
+      pending = new AbortController();
+      try {
+        const res = await getJSON<{ cities: Place[] }>(`${API}/v1/cities?q=${encodeURIComponent(q)}&limit=8`, pending.signal);
+        places = res.cities;
+        render();
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') close();
+      }
+    };
+
+    input.addEventListener('input', () => {
+      onPick(null);                         // typing again undoes the last choice
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if ([...q].length < (/[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Hangul}]/u.test(q) ? 1 : 2)) {
+        pending?.abort();
+        close();
+        return;
+      }
+      timer = setTimeout(() => search(q), 180);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (list.hidden) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); highlight(Math.min(active + 1, places.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(Math.max(active - 1, 0)); }
+      else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); pick(active); }
+      else if (e.key === 'Escape') close();
+    });
+    input.addEventListener('blur', close);
+  }
+
+  // ---- the chart
+
+  const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  function houseOf(lon: number, cusps: number[]) {
+    for (let i = 0; i < 12; i++) {
+      const from = cusps[i], to = cusps[(i + 1) % 12];
+      const span = (to - from + 360) % 360;
+      if ((lon - from + 360) % 360 < span) return i + 1;
+    }
+    return 1;
+  }
+
+  // with no birth time there are no houses: the wheel keeps equal 30° sections
+  // from 0° Aries to hold its shape, and CSS hides their lines and the axes
+  const NATURAL_CUSPS = Array.from({ length: 12 }, (_, i) => i * 30);
+
+  function drawWheel(el: HTMLElement, data: Positions) {
+    el.replaceChildren();
+    const size = Math.round(Math.min(el.clientWidth, 560));
+    const ink = token('--ink'), faint = token('--ink-faint'), gold = token('--gold');
+    const planets: Record<string, number[]> = {};
+    for (const b of data.bodies) {
+      const chart = BODIES.find(([api]) => api === b.name)?.[1];
+      if (chart) planets[chart] = [b.longitude, b.speed_longitude];   // a negative speed marks it retrograde
+    }
+    // elements in the brand palette: fire maroon, earth slate, air gold, water teal
+    const elements = ['#800000', '#5D6560', '#B8892B', '#006B7F'];
+    const chart = new Chart(el.id, size, size, {
+      COLOR_BACKGROUND: 'transparent',
+      MARGIN: size < 420 ? 28 : 50,
+      POINTS_COLOR: ink, SIGNS_COLOR: '#F5F1E9', CIRCLE_COLOR: faint, LINE_COLOR: faint,
+      CUSPS_FONT_COLOR: faint, SYMBOL_AXIS_FONT_COLOR: gold,
+      COLORS_SIGNS: Array.from({ length: 12 }, (_, i) => elements[i % 4]),
+    });
+    // the radix builds its aspect calculator without the settings, so the
+    // brand colours are applied by calculating the aspects here
+    const ASPECTS = {
+      conjunction: { degree: 0, orbit: 10, color: 'transparent' },
+      square: { degree: 90, orbit: 8, color: '#800000' },
+      trine: { degree: 120, orbit: 8, color: '#006B7F' },
+      opposition: { degree: 180, orbit: 10, color: gold },
+    };
+    el.classList.toggle('no-houses', !data.houses);
+    const radix = chart.radix({ planets, cusps: data.houses?.cusps ?? NATURAL_CUSPS });
+    radix.aspects(new AspectCalculator(radix.toPoints, { ASPECTS }).radix(planets));
+  }
+
+  function fillTable(tbody: HTMLElement, data: Positions) {
+    const zodiacal = (lon: number) => {
+      const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio',
+        'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+      const d = lon % 30, deg = Math.floor(d), min = Math.floor((d - deg) * 60);
+      return `${deg}°${String(min).padStart(2, '0')}′ ${signs[Math.floor(lon / 30) % 12]}`;
+    };
+    const row = (label: string, position: string, house: string, retro = false) => {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = label;
+      const pos = document.createElement('td');
+      pos.textContent = position;
+      if (retro) {
+        const r = document.createElement('abbr');
+        r.title = 'retrograde';
+        r.className = 'retro';
+        r.textContent = ' R';
+        pos.append(r);
+      }
+      const h = document.createElement('td');
+      h.textContent = house;
+      tr.append(th, pos, h);
+      return tr;
+    };
+    const h = data.houses;
+    const rows = data.bodies.map((b) => {
+      const label = BODIES.find(([api]) => api === b.name)?.[2] ?? b.name;
+      // the formatted string carries seconds; minutes are plenty in a table
+      return row(label, zodiacal(b.longitude), h ? String(houseOf(b.longitude, h.cusps)) : '', b.retrograde);
+    });
+    if (h) rows.push(row('Ascendant', zodiacal(h.ascendant), '1'), row('Midheaven', zodiacal(h.mc), '10'));
+    tbody.replaceChildren(...rows);
+    tbody.closest('table')?.classList.toggle('no-houses', !h);
+  }
+
+  // ---- the page
+
+  function initNatal() {
+    const form = document.getElementById('natal-form') as HTMLFormElement | null;
+    if (!form) return;
+    const date = document.getElementById('birth-date') as HTMLInputElement;
+    const time = document.getElementById('birth-time') as HTMLInputElement;
+    const unknown = document.getElementById('time-unknown') as HTMLInputElement;
+    const place = document.getElementById('birth-place') as HTMLInputElement;
+    const list = document.getElementById('place-list') as HTMLUListElement;
+    const status = document.getElementById('natal-status')!;
+    const result = document.getElementById('natal-result')!;
+    const wheel = document.getElementById('natal-wheel')!;
+    let chosen: Place | null = null;
+    let last: Positions | null = null;
+
+    initPlace(place, list, (p) => { chosen = p; });
+
+    // an unknown time is calculated for noon: the middle of the day keeps the
+    // Moon, the fastest mover, within about 7° of where it really was
+    unknown.addEventListener('change', () => {
+      time.disabled = unknown.checked;
+      if (unknown.checked) time.value = '12:00';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!date.value) { status.textContent = 'Enter your date of birth.'; date.focus(); return; }
+      if (!time.value && !unknown.checked) { status.textContent = 'Enter your time of birth, or tick that you don’t know it.'; time.focus(); return; }
+      if (!chosen) { status.textContent = 'Choose your place of birth from the list.'; place.focus(); return; }
+      status.textContent = 'Calculating…';
+      const q = new URLSearchParams({
+        datetime: `${date.value}T${unknown.checked ? '12:00' : time.value}`, tz: chosen.time_zone,
+        lat: String(chosen.latitude), lon: String(chosen.longitude),
+        bodies: BODIES.map(([api]) => api).join(','), houses: unknown.checked ? 'none' : 'placidus',
+      });
+      try {
+        last = await getJSON<Positions>(`${API}/v1/positions?${q}`);
+      } catch (err) {
+        status.textContent = (err as Error).message.replace(/^./, (c) => c.toUpperCase());
+        return;
+      }
+      status.textContent = '';
+      const born = new Date(`${date.value}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const h = last.houses;
+      document.getElementById('natal-result-title')!.textContent =
+        `Born ${born}, ${unknown.checked ? 'time unknown' : time.value}`;
+      document.getElementById('natal-result-meta')!.textContent =
+        `${placeName(chosen)} · ${chosen.latitude.toFixed(2)}°, ${chosen.longitude.toFixed(2)}° · UTC${last.input.utc_offset} · ` +
+        (h ? `${h.system} houses${h.note ? ` (${h.note})` : ''}`
+           : 'Drawn for noon. Houses and the Ascendant need a birth time, and the Moon may be up to 7° either way.');
+      result.hidden = false;
+      drawWheel(wheel, last);
+      fillTable(document.getElementById('natal-rows')!, last);
+      result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+
+    // redraw for the new colours when the theme flips, and for a new size on resize
+    let resize: ReturnType<typeof setTimeout> | undefined;
+    const redraw = () => { if (last && !result.hidden) drawWheel(wheel, last); };
+    new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+    new ResizeObserver(() => { clearTimeout(resize); resize = setTimeout(redraw, 150); }).observe(wheel);
+  }
+  document.addEventListener('astro:page-load', initNatal);
+</script>

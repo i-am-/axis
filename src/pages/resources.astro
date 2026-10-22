@@ -45,12 +45,22 @@ function split(name: string) {
   return m ? { title: m[1].trim(), mark: m[2] } : { title: name, mark: '' };
 }
 
-const items = resources.map((r) => ({
-  ...split(r.name),
-  url: r.url,
-  body: clean(r.description),
-  kind: kind(r.description),
-}));
+const items = [
+  /* the one tool that lives on this site */
+  {
+    title: 'Natal chart',
+    mark: '🪐',
+    url: '/natal-chart/',
+    body: 'Your birth chart from date, time and place of birth, calculated with the Swiss Ephemeris. Works without a birth time, too.',
+    kind: 'tool' as const,
+  },
+  ...resources.map((r) => ({
+    ...split(r.name),
+    url: r.url,
+    body: clean(r.description),
+    kind: kind(r.description),
+  })),
+];
 
 const branches = [
   {
@@ -65,7 +75,8 @@ const branches = [
   },
 ].map((b) => ({ ...b, items: items.filter((i) => i.kind === b.id) }));
 
-const host = (u: string) => new URL(u).hostname.replace(/^www\./, '');
+const external = (u: string) => /^https?:/.test(u);
+const host = (u: string) => (external(u) ? new URL(u).hostname.replace(/^www\./, '') : 'igniting.coach');
 ---
 <Base
   title="Resources"
@@ -76,8 +87,9 @@ const host = (u: string) => new URL(u).hostname.replace(/^www\./, '');
       <header class="page-header">
         <h1>What I hand people between sessions</h1>
         <p>
-          Grouped by what each one is for. All free, all external — none of them require you
-          to work with me, and several are worth doing whether or not we ever speak.
+          Grouped by what each one is for. All free, and all but the natal chart live elsewhere —
+          none of them require you to work with me, and several are worth doing whether or not
+          we ever speak.
         </p>
       </header>
 
@@ -91,7 +103,7 @@ const host = (u: string) => new URL(u).hostname.replace(/^www\./, '');
             </div>
             <div class="leaves">
               {b.items.map((r) => (
-                <a class="leaf" href={r.url} target="_blank" rel="noopener">
+                <a class="leaf" href={r.url} {...(external(r.url) && { target: '_blank', rel: 'noopener' })}>
                   <span class="leaf-mark" aria-hidden="true">{r.mark}</span>
                   <span class="leaf-title">{r.title}</span>
                   <span class="leaf-host">{host(r.url)}</span>
