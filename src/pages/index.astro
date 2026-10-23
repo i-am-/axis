@@ -50,6 +50,7 @@ const phases = [
           action="/thanks/"
           data-netlify="true"
           netlify-honeypot="bot-field"
+          data-track="form/baseline"
         >
           <input type="hidden" name="form-name" value="baseline" />
           <p class="hp-field"><label>Leave this empty: <input name="bot-field" /></label></p>
@@ -193,7 +194,7 @@ const phases = [
       <div class="callout">
         <p>
           <em>Coaching is not therapy.</em> If the work is your past, trauma or grief, therapy is
-          the right room to start in — the <a href="https://iacp.ie/therapists" target="_blank" rel="noopener">IACP register</a>
+          the right room to start in — the <a href="https://iacp.ie/therapists" target="_blank" rel="noopener" data-track="outbound/iacp">IACP register</a>
           will find you someone. I will say so in the first call rather than in session four.
         </p>
       </div>
@@ -260,7 +261,7 @@ const phases = [
         <h2>Or write properly, if a number isn’t enough</h2>
       </div>
       <div class="contact-grid">
-        <form name="contact" method="POST" action="/thanks/" data-netlify="true" netlify-honeypot="bot-field" class="contact-form">
+        <form name="contact" method="POST" action="/thanks/" data-netlify="true" netlify-honeypot="bot-field" class="contact-form" data-track="form/contact">
           <input type="hidden" name="form-name" value="contact" />
           <p class="hp-field"><label>Leave this empty: <input name="bot-field" /></label></p>
           <div class="field-pair">

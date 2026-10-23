@@ -24,13 +24,13 @@ const here = Astro.url.pathname;
           {item.name}
         </a>
       ))}
-      <a class="nav-menu-cta" href="/#ask">Start a conversation</a>
+      <a class="nav-menu-cta" href="/#ask" data-track="click/start-conversation-menu">Start a conversation</a>
     </nav>
     <div class="header-actions">
-      <a class="icon-link" href="/#contact" aria-label="Contact me">
+      <a class="icon-link" href="/#contact" aria-label="Contact me" data-track="click/contact-icon">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555ZM0 4.697v7.104l5.803-3.558L0 4.697Zm6.761 4.08L.191 12.734A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.266l-6.57-3.956L8 9.586l-1.239-.808Zm.091 2.02 6.57 3.955L16 5.697l-7.148 5.1Z"/></svg>
       </a>
-      <a class="nav-cta" href="/#ask">Start a conversation</a>
+      <a class="nav-cta" href="/#ask" data-track="click/start-conversation-header">Start a conversation</a>
       <button class="theme-toggle" data-theme-toggle type="button" aria-label="Toggle colour theme">◐</button>
       <button id="nav-toggle" class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
         <span></span><span></span><span></span>

@@ -75,6 +75,11 @@ import Base from '../layouts/Base.astro';
   import { searchPlaces, type Place } from '../lib/places';
   import type { Positions } from '../lib/ephemeris';
 
+  // GoatCounter's count.js, when analytics are on (components/GoatCounter.astro)
+  declare global {
+    interface Window { goatcounter?: { count?: (hit: { path: string; title?: string; event?: boolean }) => void } }
+  }
+
   // the ephemeris's bodies, as AstroChart names and draws them
   const BODIES: [api: string, chart: string, label: string][] = [
     ['sun', 'Sun', 'Sun'], ['moon', 'Moon', 'Moon'], ['mercury', 'Mercury', 'Mercury'],
@@ -349,6 +354,8 @@ import Base from '../layouts/Base.astro';
       result.hidden = false;
       drawWheel(wheel, last);
       fillTable(document.getElementById('natal-rows')!, last);
+      // one analytics event per chart: the birth date, never the place
+      window.goatcounter?.count?.({ path: `natal-chart/${date.value}`, title: 'Natal chart drawn', event: true });
       result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
 
