@@ -983,7 +983,7 @@ html.js [data-reveal] { opacity: 1; transform: none; }
 .natal-spread { margin-top: clamp(2.4rem, 6vw, 3.6rem); }
 .natal-spread h3 { margin: 0; }
 .natal-spread-intro { font-family: var(--ui); font-size: .92rem; color: var(--ink-soft); max-width: 40rem; margin: .5rem 0 0; }
-.natal-spread-figure { margin: 1.4rem 0 0; display: grid; grid-template-columns: minmax(0, 40rem) minmax(14rem, 1fr); gap: clamp(1.4rem, 4vw, 2.6rem); align-items: start; }
+.natal-spread-fan { margin: 1.4rem 0 0; max-width: 40rem; }
 .spread-svg { display: block; width: 100%; height: auto; border-radius: 3px; }
 .spread-frame { fill: #fff; stroke: rgb(0 0 0 / .55); }
 .spread-cloth { fill: var(--plate); }
@@ -993,9 +993,18 @@ html.js [data-reveal] { opacity: 1; transform: none; }
 .spread-plate-name { font-size: .17px; }
 .spread-label-plate { fill: #fff; }
 .spread-label { font-family: var(--ui); font-weight: 700; font-size: .2px; fill: #000; text-anchor: middle; dominant-baseline: central; }
-.natal-spread-list { list-style: none; margin: 0; padding: 0; font-family: var(--ui); font-size: .92rem; }
-.natal-spread-list li { padding: .5em 0; border-bottom: 1px solid var(--hair); }
-.spread-who { display: block; font-size: .8rem; color: var(--gold); }
+.natal-spread-table { width: 100%; margin-top: clamp(1.6rem, 4vw, 2.4rem); border-collapse: collapse; font-family: var(--ui); font-size: .92rem; }
+.natal-spread-table th, .natal-spread-table td { padding: .9em 1.2em .9em 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--hair); }
+.natal-spread-table td:last-child { padding-right: 0; }
+.natal-spread-table thead th { padding-block: .42em; color: var(--gold); font-weight: 500; border-bottom-color: var(--gold-dim); }
+.natal-spread-table tbody th { font-weight: 400; color: var(--ink-soft); white-space: nowrap; }
+.spread-card { width: 30%; }
+.spread-card-n { display: block; font-family: var(--serif); font-size: 1.3rem; line-height: 1; color: var(--gold); margin-bottom: .2em; }
+.spread-card q { display: block; margin-top: .5em; font-family: var(--serif); font-style: italic; color: var(--ink-soft); }
+.spread-reading p { margin: 0; }
+.spread-reading p + p { margin-top: .45em; }
+.spread-motifs { color: var(--gold); font-size: .85rem; }
+.spread-imagery { color: var(--ink-faint); font-size: .85rem; }
 
 .natal-credit { font-family: var(--ui); font-size: .8rem; color: var(--ink-faint); margin-top: 2.6rem; }
 .natal-credit a { color: inherit; }
@@ -1004,6 +1013,10 @@ html.js [data-reveal] { opacity: 1; transform: none; }
   .natal-fields { grid-template-columns: 1fr 1fr; }
   .place-field { grid-column: 1 / -1; }
   .natal-layout { grid-template-columns: 1fr; }
-  .natal-spread-figure { grid-template-columns: 1fr; }
+  /* the spread's table stacks: placement, then each card over its reading */
+  .natal-spread-table thead { display: none; }
+  .natal-spread-table tr, .natal-spread-table th, .natal-spread-table td { display: block; width: auto; }
+  .natal-spread-table tbody th { padding-bottom: 0; border-bottom: 0; color: var(--gold); }
+  .natal-spread-table .spread-card { padding-bottom: .4em; border-bottom: 0; }
   #place-list .place-coords { grid-column: 2 / -1; }
 }

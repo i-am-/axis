@@ -17,12 +17,16 @@ const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', '
   'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 const signOf = (lon: number) => SIGNS[Math.floor(lon / 30) % 12];
 
-export interface Card { n: number; name: string }
+// the reading of each card from Natalist's assets/symbolon.csv
+export interface Card {
+  n: number; name: string;
+  description: string; imagery: string; symbols: string[]; motifs: string[]; quote: string;
+}
 export interface Slot { body: string; sign: string; cards: Card[] }
 
 // ---- casting (cardspread.py)
 
-interface DeckCard { n: number; name: string; signs: string[]; ruler?: string }
+interface DeckCard extends Card { signs: string[]; ruler?: string }
 const archetype = new Map<string, DeckCard>();      // sign → its one-sign card
 const pair = new Map<string, DeckCard>();           // "Aries|Cancer" → the two-sign card
 const ruled = new Map<string, string[]>();          // planet → the signs it rules
@@ -45,7 +49,7 @@ function match(body: string, sign: string): Card[] {
   const add = (c?: DeckCard) => { if (c && !found.includes(c)) found.push(c); };
   if (body === 'Sun') add(archetype.get(sign));
   else for (const home of ruled.get(body) ?? []) add(home === sign ? archetype.get(home) : pair.get(`${home}|${sign}`));
-  return found.map(({ n, name }) => ({ n, name }));
+  return found.map(({ signs, ruler, ...card }) => card);
 }
 
 const SPREAD = ['Ascendant', 'Sun', 'Moon', 'Mercury', 'Venus', 'Mars'] as const;
