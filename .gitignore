@@ -14,3 +14,6 @@ dist/
 # OS / editor
 .DS_Store
 .cache/
+
+# Symbolon card scans, fetched at build from the private i-am-/symbolon-assets
+public/symbolon/
