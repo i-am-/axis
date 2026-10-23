@@ -66,12 +66,12 @@ import Base from '../layouts/Base.astro';
             sign, and each other planet the card joining the sign it rules with the one it
             stands in.
           </p>
-          <figure class="natal-spread-figure">
-            <div id="natal-spread-fan"></div>
-            <figcaption>
-              <ul class="natal-spread-list" id="natal-spread-list"></ul>
-            </figcaption>
-          </figure>
+          <div class="natal-spread-fan" id="natal-spread-fan"></div>
+          <table class="natal-spread-table">
+            <caption class="sr-only">The cards of your Symbolon spread</caption>
+            <thead><tr><th scope="col">Placement</th><th scope="col">Card</th><th scope="col">Reading</th></tr></thead>
+            <tbody id="natal-spread-rows"></tbody>
+          </table>
         </section>
       </section>
 
@@ -314,14 +314,40 @@ import Base from '../layouts/Base.astro';
     const { castSpread, drawSpread, haveImages } = await import('../lib/symbolon');
     const slots = castSpread(data);
     document.getElementById('natal-spread-fan')!.replaceChildren(drawSpread(slots, await haveImages()));
-    document.getElementById('natal-spread-list')!.replaceChildren(...slots.map((s) => {
-      const li = document.createElement('li');
-      const who = document.createElement('span');
-      who.className = 'spread-who';
-      who.textContent = `${s.body} in ${s.sign}`;
-      li.append(who, s.cards.map((c) => `${c.n}. ${c.name}`).join(' · '));
-      return li;
-    }));
+    document.getElementById('natal-spread-rows')!.replaceChildren(...slots.flatMap((s) => s.cards.map((c, i) => {
+      const tr = document.createElement('tr');
+      // a slot casting two cards takes two rows under one placement
+      if (i === 0) {
+        const where = document.createElement('th');
+        where.scope = 'row';
+        where.rowSpan = s.cards.length;
+        where.textContent = `${s.body} in ${s.sign}`;
+        tr.append(where);
+      } else tr.className = 'spread-row-more';
+      const card = document.createElement('td');
+      card.className = 'spread-card';
+      const n = document.createElement('span');
+      n.className = 'spread-card-n';
+      n.textContent = String(c.n);
+      const quote = document.createElement('q');
+      quote.textContent = c.quote;
+      card.append(n, c.name, quote);
+      const reading = document.createElement('td');
+      reading.className = 'spread-reading';
+      const text = (tag: string, cls: string, words: string) => {
+        const e = document.createElement(tag);
+        e.className = cls;
+        e.textContent = words;
+        return e;
+      };
+      reading.append(
+        text('p', 'spread-description', c.description),
+        text('p', 'spread-motifs', c.motifs.join(' · ')),
+        text('p', 'spread-imagery', `${c.imagery} ${c.symbols.join('; ')}.`),
+      );
+      tr.append(card, reading);
+      return tr;
+    })));
   }
 
   // ---- the page
