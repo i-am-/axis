@@ -61,3 +61,23 @@ pyftsubset ~/.local/share/fonts/IgnitingCoach/Literata-Regular.ttf \
   --layout-features="liga,clig,kern,mark,mkmk,ccmp,locl,rlig,smcp,c2sc,onum,lnum,tnum,pnum,case,frac,sups,ordn" \
   --unicodes="U+0000-00FF,U+0100-017F,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212" --no-hinting --desubroutinize
 ```
+
+## Natal chart data
+
+`/natal-chart/` runs entirely on the site; it calls no outside service.
+
+- **Positions**: the Swiss Ephemeris 2.10.03 in WebAssembly
+  (`@swisseph/browser`, AGPL), wrapped by `src/lib/ephemeris.ts`. It reads
+  the JPL DE441 files in `public/ephe/` (years 600–2999), fetching only the
+  600-year block a chart needs, and refuses the low-precision Moshier
+  fallback. Local time becomes UTC through the browser's IANA time-zone data.
+- **Places**: GeoNames cities1000 (171k places, every language's name),
+  sharded by first letter in `public/places/` and searched by
+  `src/lib/places.ts` with uFuzzy: exact and prefix matches first, then
+  one-typo near misses.
+
+Refresh both (needs curl, unzip, Node 24):
+
+```sh
+scripts/fetch-data.sh
+```

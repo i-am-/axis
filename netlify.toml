@@ -22,3 +22,15 @@
   for = "/_astro/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Swiss Ephemeris data files for the natal chart: fixed for a given name
+[[headers]]
+  for = "/ephe/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+# the natal chart's place index: rebuilt now and then under the same names
+[[headers]]
+  for = "/places/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

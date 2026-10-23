@@ -62,7 +62,9 @@ import Base from '../layouts/Base.astro';
 
       <p class="natal-credit">
         Place names © <a href="https://www.geonames.org/">GeoNames</a>, CC BY 4.0. Chart drawn with{' '}
-        <a href="https://github.com/AstroDraw/AstroChart">AstroChart</a>.
+        <a href="https://github.com/AstroDraw/AstroChart">AstroChart</a>. Positions from the Swiss
+        Ephemeris, calculated in your browser with{' '}
+        <a href="https://github.com/swisseph-js/swisseph">swisseph-js</a>, open source under the AGPL.
       </p>
     </div>
   </div>
@@ -70,10 +72,10 @@ import Base from '../layouts/Base.astro';
 
 <script>
   import { Chart, AspectCalculator } from '@astrodraw/astrochart';
+  import { searchPlaces, type Place } from '../lib/places';
+  import type { Positions } from '../lib/ephemeris';
 
-  const API = (import.meta.env.PUBLIC_EPHEM_API ?? 'https://stats.igniting.coach/ephem').replace(/\/$/, '');
-
-  // the API's bodies, as AstroChart names and draws them
+  // the ephemeris's bodies, as AstroChart names and draws them
   const BODIES: [api: string, chart: string, label: string][] = [
     ['sun', 'Sun', 'Sun'], ['moon', 'Moon', 'Moon'], ['mercury', 'Mercury', 'Mercury'],
     ['venus', 'Venus', 'Venus'], ['mars', 'Mars', 'Mars'], ['jupiter', 'Jupiter', 'Jupiter'],
@@ -81,17 +83,6 @@ import Base from '../layouts/Base.astro';
     ['pluto', 'Pluto', 'Pluto'], ['true_node', 'NNode', 'North Node'], ['mean_lilith', 'Lilith', 'Lilith'],
     ['chiron', 'Chiron', 'Chiron'],
   ];
-
-  interface Place {
-    name: string; region?: string; country: string; country_code: string;
-    latitude: number; longitude: number; time_zone: string; matched_name: string;
-  }
-  interface Body { name: string; longitude: number; speed_longitude: number; formatted: string; retrograde: boolean }
-  interface Positions {
-    input: { local: string; utc: string; utc_offset: string };
-    bodies: Body[];
-    houses?: { system: string; note?: string; cusps: number[]; ascendant: number; mc: number };
-  }
 
   // "Moscow, Russia", not "Moscow, Moscow, Russia"
   // flags as SVG files: Windows draws flag emoji as bare letters
@@ -107,20 +98,13 @@ import Base from '../layouts/Base.astro';
   const placeName = (p: Place) =>
     [p.name, p.region !== p.name ? p.region : '', p.country].filter(Boolean).join(', ');
 
-  async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
-    const res = await fetch(url, { signal });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error ?? `The calculation service answered ${res.status}.`);
-    return body as T;
-  }
-
   // ---- the place search: a combobox that narrows as the visitor types
 
   function initPlace(input: HTMLInputElement, list: HTMLUListElement, onPick: (p: Place | null) => void) {
     let places: Place[] = [];
     let active = -1;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let pending: AbortController | undefined;
+    let latest = '';                        // answers to older queries arriving late are dropped
 
     const close = () => {
       list.hidden = true;
@@ -186,14 +170,14 @@ import Base from '../layouts/Base.astro';
     };
 
     const search = async (q: string) => {
-      pending?.abort();
-      pending = new AbortController();
+      latest = q;
       try {
-        const res = await getJSON<{ cities: Place[] }>(`${API}/v1/cities?q=${encodeURIComponent(q)}&limit=8`, pending.signal);
-        places = res.cities;
+        const found = await searchPlaces(q, 8);
+        if (q !== latest) return;
+        places = found;
         render();
-      } catch (e) {
-        if ((e as Error).name !== 'AbortError') close();
+      } catch {
+        if (q === latest) close();
       }
     };
 
@@ -202,11 +186,11 @@ import Base from '../layouts/Base.astro';
       clearTimeout(timer);
       const q = input.value.trim();
       if ([...q].length < (/[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Hangul}]/u.test(q) ? 1 : 2)) {
-        pending?.abort();
+        latest = '';
         close();
         return;
       }
-      timer = setTimeout(() => search(q), 180);
+      timer = setTimeout(() => search(q), 120);
     });
 
     input.addEventListener('keydown', (e) => {
@@ -335,13 +319,13 @@ import Base from '../layouts/Base.astro';
       if (!time.value && !unknown.checked) { status.textContent = 'Enter your time of birth, or tick that you don’t know it.'; time.focus(); return; }
       if (!chosen) { status.textContent = 'Choose your place of birth from the list.'; place.focus(); return; }
       status.textContent = 'Calculating…';
-      const q = new URLSearchParams({
-        datetime: `${date.value}T${unknown.checked ? '12:00' : time.value}`, tz: chosen.time_zone,
-        lat: String(chosen.latitude), lon: String(chosen.longitude),
-        bodies: BODIES.map(([api]) => api).join(','), houses: unknown.checked ? 'none' : 'placidus',
-      });
       try {
-        last = await getJSON<Positions>(`${API}/v1/positions?${q}`);
+        const { computeChart } = await import('../lib/ephemeris');
+        last = await computeChart({
+          datetime: `${date.value}T${unknown.checked ? '12:00' : time.value}`, tz: chosen.time_zone,
+          lat: chosen.latitude, lon: chosen.longitude,
+          bodies: BODIES.map(([api]) => api), houses: unknown.checked ? 'none' : 'placidus',
+        });
       } catch (err) {
         status.textContent = (err as Error).message.replace(/^./, (c) => c.toUpperCase());
         return;
