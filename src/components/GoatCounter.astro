@@ -24,6 +24,22 @@ const url = import.meta.env.PUBLIC_ANALYTICS_URL ?? 'https://stats.igniting.coac
             event: false,
           });
         });
+
+        /* Events: a click on an element with data-track="name", or the
+           submission of a form with it, counts as the event "name". This is
+           delegated from the document, not count.js's own
+           data-goatcounter-click, which binds only the elements present on
+           the first load and so misses every page swapped in after it. A
+           form's submit fires only once the browser has accepted its
+           required fields, so it counts real submissions. */
+        function track(e) {
+          var el = e.target.closest && e.target.closest('[data-track]');
+          if (!el || (e.type === 'click') === (el.tagName === 'FORM')) return;
+          if (!window.goatcounter || !window.goatcounter.count) return;
+          window.goatcounter.count({ path: el.dataset.track, title: document.title, event: true });
+        }
+        document.addEventListener('click', track);
+        document.addEventListener('submit', track);
       })();
     </script>
   </>
