@@ -1,0 +1,35 @@
+---
+// Liwan — cookieless, self-hosted at stats.igniting.coach/liwan, on trial
+// alongside GoatCounter. Loaded only in production builds; disable via
+// PUBLIC_ANALYTICS_ENABLED=false.
+const enabled = import.meta.env.PROD && import.meta.env.PUBLIC_ANALYTICS_ENABLED !== 'false';
+const url = import.meta.env.PUBLIC_LIWAN_URL ?? 'https://stats.igniting.coach/liwan';
+---
+{enabled && (
+  <>
+    {/* The tracker counts the first load and, through the Navigation API,
+        every ClientRouter page swap after it, so page views need no help. */}
+    <script type="module" src={`${url}/script.js`} data-entity="igniting-coach"></script>
+    <script is:inline data-liwan-src={`${url}/script.js`}>
+      /* Events, the same data-track elements GoatCounter.astro counts: a click
+         on one, or the submission of a form with it, sends the event "name".
+         The tracker's event() comes from importing the same module URL, which
+         the browser resolves to the instance already loaded above. It is also
+         left on window.liwan for page scripts (natal-chart.astro). */
+      (function () {
+        var tracker = import(document.currentScript.dataset.liwanSrc).then(function (m) {
+          window.liwan = m;
+          return m;
+        });
+        function track(e) {
+          var el = e.target.closest && e.target.closest('[data-track]');
+          if (!el || (e.type === 'click') === (el.tagName === 'FORM')) return;
+          var name = el.dataset.track;
+          tracker.then(function (m) { return m.event(name); }).catch(function () {});
+        }
+        document.addEventListener('click', track);
+        document.addEventListener('submit', track);
+      })();
+    </script>
+  </>
+)}

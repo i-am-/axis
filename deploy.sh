@@ -11,11 +11,14 @@
 #        b) goatcounter procd service enabled & running
 #        c) TLS cert valid for > 21 days
 #        d) public endpoint https://stats.igniting.coach/count.js = 200
+#        e) liwan procd service enabled & running (on trial alongside
+#           GoatCounter; nginx serves it under /liwan/ from goatcounter.conf)
+#        f) public endpoint https://stats.igniting.coach/liwan/script.js = 200
 #
-# Auth for router checks (a, b), pick one:
+# Auth for router checks (a, b, e), pick one:
 #   - export ROUTER_PW='...'   (uses sshpass)
 #   - or install a key:  ssh-copy-id root@192.168.8.1
-# Checks c, d always run (public, no auth needed).
+# Checks c, d, f always run (public, no auth needed).
 
 set -euo pipefail
 
@@ -35,9 +38,9 @@ step "1/2 Building site"
 ok "dist/ regenerated"
 
 # ---------------------------------------------------------------- 2. router
-step "2/2 Router / GoatCounter health check"
+step "2/2 Router / GoatCounter / Liwan health check"
 
-# (a) nginx vhost + (b) service — need router access
+# (a) nginx vhost + (b, e) services — need router access
 SSH_CMD=""
 if [[ -n "${ROUTER_PW:-}" ]]; then SSH_CMD=(sshpass -p "$ROUTER_PW" ssh -o ConnectTimeout=8 "$ROUTER")
 elif ssh -o BatchMode=yes -o ConnectTimeout=8 "$ROUTER" true 2>/dev/null; then SSH_CMD=(ssh -o BatchMode=yes "$ROUTER")
@@ -55,6 +58,12 @@ if [[ -n "$SSH_CMD" ]]; then
     else
         bad "goatcounter service not running — try: /etc/init.d/goatcounter start"
     fi
+    if "${SSH_CMD[@]}" /etc/init.d/liwan enabled && \
+       "${SSH_CMD[@]}" pidof liwan >/dev/null; then
+        ok "liwan service enabled and running"
+    else
+        bad "liwan service not running — try: /etc/init.d/liwan start"
+    fi
 else
     echo "   – skipped (no ROUTER_PW / ssh key); set ROUTER_PW to enable"
 fi
@@ -69,6 +78,11 @@ if (( DAYS > CERT_MIN_DAYS )); then ok "TLS cert valid for $DAYS more days"; els
 CODE=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "$STATS_URL/count.js")
 if [[ "$CODE" == 200 ]]; then ok "public endpoint $STATS_URL/count.js → 200"; else
     bad "public endpoint returned $CODE (expected 200)"; fi
+
+# (f) public Liwan tracker — public
+CODE=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "$STATS_URL/liwan/script.js")
+if [[ "$CODE" == 200 ]]; then ok "public endpoint $STATS_URL/liwan/script.js → 200"; else
+    bad "Liwan endpoint returned $CODE (expected 200)"; fi
 
 # ---------------------------------------------------------------- result
 echo
