@@ -125,7 +125,7 @@ export const resources = [
     "description": "          **The Big Five Personality Test (OCEAN)** is a framework that describes five core personality traits:\n          - ```Openness```: Creative and curious vs. conventional and cautious\n          - ```Conscientiousness```: Organized and disciplined vs. easygoing and spontaneous\n          - ```Extraversion```: Outgoing and energetic vs. solitary and reserved\n          - ```Agreeableness```: Compassionate and cooperative vs. competitive and suspicious\n          - ```Neuroticism```: Anxious and sensitive vs. confident and emotionally stable\n\n          This model is a valuable tool in coaching because it provides a shared language to...\n          - Identify ```strengths``` and ```challenges```\n          - ```Tailor strategies```\n          - ```Improve self-awareness```\n        type: \"assessment\"\n        icon: \"circle-arrow-right\""
   },
   {
-    "name": "Holland Codes (RIASEC) 🧭",
+    "name": "Holland Codes (RIASEC) 💼",
     "url": "https://onetinterestprofiler.org/",
     "description": "          **Holland codes** sort work interests into six types (RIASEC). The free O*NET Interest Profiler finds your three-letter code and the careers that share it.\n        type: \"assessment\"\n        icon: \"circle-arrow-right\""
   },
@@ -153,6 +153,16 @@ export const resources = [
     "name": "The Wheel of Life 🎯",
     "url": "https://www.kingstowncollege.ie/coaching-tool-the-wheel-of-life/",
     "description": "          A classic visual tool used to assess and balance different areas of a person’s life, such as career, relationships, health, and finances. It provides a 'snapshot' of a client’s current satisfaction and helps them identify areas for improvement.\n        type: \"framework\"\n        icon: \"circle-arrow-right\"\n  - name: \"Tools\"\n    resources:"
+  },
+  {
+    "name": "Ikigai 🌸",
+    "url": "https://en.wikipedia.org/wiki/Ikigai",
+    "description": "          **Ikigai**, a Japanese idea of a reason for being, is the overlap of what you love, what you are good at, what the world needs and what you can be paid for.\n        type: \"tool\"\n        icon: \"circle-arrow-right\""
+  },
+  {
+    "name": "ABZ Planning 🛟",
+    "url": "https://greylock.com/greymatter/reid-hoffman-abzplanning/",
+    "description": "          **ABZ planning**, from Reid Hoffman’s The Start-up of You: Plan A is your path now, Plan B the pivot next door, and Plan Z the lifeboat if both fail.\n        type: \"tool\"\n        icon: \"circle-arrow-right\""
   },
   {
     "name": "The Greater Good in Action 🌱",
