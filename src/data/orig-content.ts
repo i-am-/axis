@@ -125,6 +125,11 @@ export const resources = [
     "description": "          **The Big Five Personality Test (OCEAN)** is a framework that describes five core personality traits:\n          - ```Openness```: Creative and curious vs. conventional and cautious\n          - ```Conscientiousness```: Organized and disciplined vs. easygoing and spontaneous\n          - ```Extraversion```: Outgoing and energetic vs. solitary and reserved\n          - ```Agreeableness```: Compassionate and cooperative vs. competitive and suspicious\n          - ```Neuroticism```: Anxious and sensitive vs. confident and emotionally stable\n\n          This model is a valuable tool in coaching because it provides a shared language to...\n          - Identify ```strengths``` and ```challenges```\n          - ```Tailor strategies```\n          - ```Improve self-awareness```\n        type: \"assessment\"\n        icon: \"circle-arrow-right\""
   },
   {
+    "name": "Holland Codes (RIASEC) 🧭",
+    "url": "https://onetinterestprofiler.org/",
+    "description": "          **Holland codes** sort work interests into six types (RIASEC). The free O*NET Interest Profiler finds your three-letter code and the careers that share it.\n        type: \"assessment\"\n        icon: \"circle-arrow-right\""
+  },
+  {
     "name": "The Lüscher Color Test 🌈",
     "url": "https://psytests.org/luscher/lus8en-run.html",
     "description": "          **The Lüscher Color Test** is a psychological assessment tool developed by Swiss psychotherapist Dr Max Lüscher in 1949. It’s based on the idea that while everyone perceives color the same way, individual preferences for colours are unique. This test measures a person’s current psychological state, including their ability to handle stress and their capacity for performance and communication. By analysing a person’s colour choices, the test aims to uncover the root causes of psychological stress, which may be contributing to physical symptoms.\n\n          This test provides:\n          - ```Quick and non-verbal insights```\n          - ```Identification of the root causes of stress```\n          - ```Highlights ‘snapshot’ of the current needs and motivations```\n          - ```A tool for tracking progress over time```\n        type: \"assessment\"\n        icon: \"circle-arrow-right\""
