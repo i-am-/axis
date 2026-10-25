@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import SlideDeck from '../../components/SlideDeck.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -9,6 +10,7 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+const slides = entry.data.format === 'slides';
 const dateIso = entry.data.date?.toISOString() ?? '';
 const fmt = (d: Date) => d.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
@@ -22,9 +24,10 @@ const fmt = (d: Date) => d.toLocaleDateString('en-IE', { day: 'numeric', month: 
         <h1>{entry.data.title}</h1>
         {entry.data.description && <p>{entry.data.description}</p>}
       </header>
-      <div class="prose post-body">
+      <div class:list={['prose post-body', { 'post-slides': slides }]} data-deck={slides ? '' : undefined}>
         <Content />
       </div>
+      {slides && <SlideDeck />}
       <p style="margin-top:3rem"><a class="apparatus back-link" href="/blog/">← all writing</a></p>
     </div>
   </article>

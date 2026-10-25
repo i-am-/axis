@@ -18,6 +18,9 @@ const blog = defineCollection({
     title: z.string(),
     description: z.string().optional(),
     date: z.coerce.date().optional(),
+    // `slides` shows the post as a slide deck, a slide per `##` heading
+    // (components/SlideDeck.astro); without JS it reads as an article
+    format: z.enum(['article', 'slides']).default('article'),
   }),
 });
 
