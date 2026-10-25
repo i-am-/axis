@@ -417,12 +417,9 @@ import Base from '../layouts/Base.astro';
       fillTable(document.getElementById('natal-rows')!, last);
       drawCards(last);
       // one analytics event per chart: the birth date for GoatCounter; for
-      // Liwan also the birth place's coordinates, to two decimals as shown
-      // above, never its name
+      // Liwan also the birth place's name, never its coordinates
       window.goatcounter?.count?.({ path: `natal-chart/${date.value}`, title: 'Natal chart drawn', event: true });
-      window.liwan?.event?.('natal-chart', {
-        properties: { date: date.value, coordinates: `${chosen.latitude.toFixed(2)},${chosen.longitude.toFixed(2)}` },
-      }).catch(() => {});
+      window.liwan?.event?.('natal-chart', { properties: { place: placeName(chosen), date: date.value } }).catch(() => {});
       result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
 
