@@ -4,13 +4,18 @@ date: 2025-06-21T14:38:33+02:00
 description: "What a manufacturing concept called OEE can teach us about availability, performance, quality — and living a purposeful life."
 ---
 
-![Divine machine](/img/blog/oee.png)
-
 Coaching is a way to look at your life from the outside in and unveil key roadblocks that are holding you back from realising your full human potential. Imagine yourself as a perfect divine machine. Let's assume that all your basic needs are satisfied. You have a shelter, food, a partner, and a decent job. Your key resource is your `time`. You want to convert this time into things that are important and valuable to you, such as memorable experiences, fulfilling connections, happiness and joy, paintings, music, poetry, money, and so on. What are the opportunities to improve the output of your machine?
 
 This model of the 'divine machine' is based on a well-known manufacturing concept called *Overall Equipment Effectiveness (OEE)*. OEE framework measures the efficiency of a machine by breaking it down into three components: `Availability`, `Performance`, and `Quality`. By applying this same logic to ourselves, we can identify areas for personal improvement and work towards optimising our own 'machine'.
 
-![OEE](/img/blog/oee1.png)
+<figure class="oee">
+<figcaption>Overall Equipment Effectiveness: each stage keeps only what the one before it delivered</figcaption>
+<div class="oee-row" style="--w:1;--g:1;--c:var(--ink-soft)"><p><b>Your time</b><span>100%</span></p><div class="oee-bar"></div></div>
+<div class="oee-row" style="--w:1;--g:.9"><p><b>Availability</b><span>90%</span></p><div class="oee-bar"></div><small>Lost to downtime: illness, poor sleep, burnout, distraction</small></div>
+<div class="oee-row" style="--w:.9;--g:.63"><p><b>Performance</b><span>70%</span></p><div class="oee-bar"></div><small>Lost to slow-downs: multitasking, fatigue, no clear plan</small></div>
+<div class="oee-row" style="--w:.63;--g:.567"><p><b>Quality</b><span>90%</span></p><div class="oee-bar"></div><small>Lost to rework: mistakes and work that must be redone</small></div>
+<div class="oee-row oee-total" style="--w:.567;--g:.567;--c:var(--gold-fill)"><p><b>Good output</b><span>57%</span></p><div class="oee-bar"></div><small>OEE = 90% × 70% × 90%</small></div>
+</figure>
 
 The first component, `Availability`, measures the time the machine is operational and ready to produce. For a human, this refers to the time we are physically and mentally available for productive work or activity. Availability losses are anything that causes downtime: illness, lack of sleep, burnout, or even distractions that pull us away from our goals. To maximise this metric, we must prioritise self-care, rest, nutrition, and mental health practices that keep our divine machine running without interruption. Just as a factory machine requires scheduled maintenance, so too do we need to schedule time for holidays and recovery to ensure our long-term availability.
 
