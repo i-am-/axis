@@ -40,17 +40,45 @@ const ogType = jsonld === 'post' ? 'article' : 'website';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- FOUC-free theme init (runs before paint) -->
+    <!-- FOUC-free theme init (runs before paint). The OS colour scheme
+         decides unless the visitor has clicked the toggle this session;
+         that choice lives in sessionStorage and holds for every page
+         until the tab is closed. -->
     <script is:inline>
       (function () {
-        document.documentElement.classList.add('js');
-        try {
-          // Direction B is dark-first: auto stays dark unless the OS asks for light.
-          var t = localStorage.getItem('theme') || 'auto';
-          if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-bs-theme', t);
-          document.documentElement.setAttribute('data-theme', t); // astro-mermaid's loading skeleton
-        } catch (e) {}
+        var root = document.documentElement;
+        root.classList.add('js');
+        var mq = matchMedia('(prefers-color-scheme: light)');
+        function stored() {
+          try { return sessionStorage.getItem('theme'); } catch (e) { return null; }
+        }
+        // Direction B is dark-first: auto stays dark unless the OS asks for light.
+        function resolve() {
+          var t = stored();
+          return t === 'light' || t === 'dark' ? t : (mq.matches ? 'light' : 'dark');
+        }
+        function apply(el, t) {
+          el.setAttribute('data-bs-theme', t);
+          el.setAttribute('data-theme', t); // astro-mermaid's loading skeleton
+        }
+        window.__theme = {
+          resolve: resolve,
+          apply: apply,
+          set: function (t) {
+            try { sessionStorage.setItem('theme', t); } catch (e) {}
+            apply(root, t);
+          },
+        };
+        apply(root, resolve());
+        // Follow live OS changes while the visitor has not picked a theme.
+        mq.addEventListener('change', function () {
+          if (!stored()) apply(root, resolve());
+        });
+        // ClientRouter swaps in the next page's <html> attributes, which
+        // carry no theme; stamp it on the incoming document before the swap.
+        document.addEventListener('astro:before-swap', function (e) {
+          apply(e.newDocument.documentElement, resolve());
+        });
       })();
     </script>
 
@@ -100,12 +128,7 @@ const ogType = jsonld === 'post' ? 'article' : 'website';
         const themeBtn = target.closest('[data-theme-toggle]');
         if (themeBtn) {
           const current = document.documentElement.getAttribute('data-bs-theme') || 'light';
-          const next = current === 'dark' ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-bs-theme', next);
-          document.documentElement.setAttribute('data-theme', next);
-          try {
-            localStorage.setItem('theme', next);
-          } catch {}
+          (window as any).__theme.set(current === 'dark' ? 'light' : 'dark');
           return;
         }
         const navBtn = target.closest('#nav-toggle');
