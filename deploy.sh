@@ -7,8 +7,7 @@
 #   2. Router health check (runs on EVERY deploy — see audit task:
 #      GL.iNet firmware upgrades may regenerate nginx config / drop
 #      the liwan init script, silently killing analytics):
-#        a) nginx vhost goatcounter.conf (legacy name; now serves Liwan)
-#           still present in /etc/nginx/conf.d
+#        a) liwan.conf still present in /etc/nginx/conf.d
 #        b) liwan procd service enabled & running
 #        c) TLS cert valid for > 21 days
 #        d) public endpoint https://stats.igniting.coach/script.js = 200
@@ -45,10 +44,10 @@ elif ssh -o BatchMode=yes -o ConnectTimeout=8 "$ROUTER" true 2>/dev/null; then S
 fi
 
 if [[ -n "$SSH_CMD" ]]; then
-    if "${SSH_CMD[@]}" test -s /etc/nginx/conf.d/goatcounter.conf; then
-        ok "nginx vhost goatcounter.conf (Liwan) present"
+    if "${SSH_CMD[@]}" test -s /etc/nginx/conf.d/liwan.conf; then
+        ok "nginx vhost liwan.conf present"
     else
-        bad "goatcounter.conf (Liwan vhost) MISSING — restore it (likely firmware upgrade)"
+        bad "liwan.conf MISSING — restore it (likely firmware upgrade)"
     fi
     if "${SSH_CMD[@]}" /etc/init.d/liwan enabled && \
        "${SSH_CMD[@]}" pidof liwan >/dev/null; then
