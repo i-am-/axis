@@ -90,11 +90,9 @@ import Base from '../layouts/Base.astro';
   import { searchPlaces, type Place } from '../lib/places';
   import type { Positions } from '../lib/ephemeris';
 
-  // GoatCounter's count.js and Liwan's tracker, when analytics are on
-  // (components/GoatCounter.astro, components/Liwan.astro)
+  // Liwan's tracker, when analytics are on (components/Liwan.astro)
   declare global {
     interface Window {
-      goatcounter?: { count?: (hit: { path: string; title?: string; event?: boolean }) => void };
       liwan?: { event?: (name: string, options?: { properties?: Record<string, string> }) => Promise<void> };
     }
   }
@@ -418,7 +416,6 @@ import Base from '../layouts/Base.astro';
       drawCards(last);
       // one analytics event per chart: the birth date and the birth place's
       // name, never its coordinates
-      window.goatcounter?.count?.({ path: `natal-chart/${date.value}/${placeName(chosen)}`, title: 'Natal chart drawn', event: true });
       window.liwan?.event?.('natal-chart', { properties: { place: placeName(chosen), date: date.value } }).catch(() => {});
       result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });

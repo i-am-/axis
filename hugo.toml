@@ -8,9 +8,6 @@ disableKinds = ["taxonomy", "term"]
 [params]
   description = "Life and career coaching by Ilya Malyarenko — 15 years in management consulting and six in biopharma, now helping people ignite their growth through life's biggest transitions."
   location = "Islandbridge, Dublin 8, Ireland"
-  [params.analytics]
-    enabled = true
-    url = "https://stats.igniting.coach"
 
 [markup]
   [markup.goldmark]
