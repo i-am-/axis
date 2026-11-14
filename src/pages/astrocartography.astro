@@ -1,0 +1,280 @@
+---
+import Base from '../layouts/Base.astro';
+import BirthForm from '../components/BirthForm.astro';
+---
+<Base
+  title="Astrocartography"
+  description="Where on Earth each planet stood on the horizon or the meridian when you were born: your astrocartography lines, calculated in your browser with the Swiss Ephemeris."
+>
+  <div class="page natal acg">
+    <div class="container">
+      <header class="page-header">
+        <h1>Astrocartography</h1>
+        <p>
+          At the moment you were born, every planet was rising somewhere on Earth, setting somewhere
+          else, and overhead along one meridian. These are your lines. Places near them are said to
+          bring out that planet in your life.
+        </p>
+      </header>
+
+      <BirthForm id="acg-form" submitLabel="Draw my lines" timeRequired />
+
+      <section class="natal-result" id="acg-result" hidden aria-labelledby="acg-title">
+        <h2 id="acg-title" class="natal-result-title"></h2>
+        <p class="natal-result-meta" id="acg-meta"></p>
+
+        <div class="acg-chips" id="acg-planets" role="group" aria-label="Planets shown"></div>
+        <div class="acg-chips" id="acg-angles" role="group" aria-label="Lines shown"></div>
+        <div class="acg-map" id="acg-map" aria-hidden="true"></div>
+        <p class="acg-legend" aria-hidden="true">
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-MC" x1="0" y1="2" x2="29" y2="2" /></svg> Midheaven
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-IC" x1="0" y1="2" x2="29" y2="2" /></svg> Imum Coeli
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-ASC" x1="0" y1="2" x2="29" y2="2" /></svg> Ascendant
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-DSC" x1="0" y1="2" x2="29" y2="2" /></svg> Descendant
+          · Drag to move, scroll or pinch to zoom, click a place to read it.
+        </p>
+
+        <section class="acg-city" aria-labelledby="acg-city-label">
+          <div class="place-field">
+            <label for="acg-city" id="acg-city-label">Look up a place</label>
+            <input
+              type="text" id="acg-city" autocomplete="off" spellcheck="false"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="acg-city-list"
+              placeholder="A town or city you are thinking of"
+            />
+            <ul id="acg-city-list" role="listbox" aria-labelledby="acg-city-label" hidden></ul>
+          </div>
+          <div id="acg-near" class="acg-near" aria-live="polite"></div>
+        </section>
+
+        <table class="natal-table acg-table">
+          <caption>Your lines</caption>
+          <thead><tr>
+            <th scope="col">Planet</th><th scope="col">MC</th><th scope="col">IC</th>
+            <th scope="col">ASC at your birth latitude</th><th scope="col">DSC at your birth latitude</th>
+          </tr></thead>
+          <tbody id="acg-rows"></tbody>
+        </table>
+
+        <p class="natal-next">
+          <a id="acg-back" href="/natal-chart/">Back to your chart</a>
+          <a class="btn btn-primary" href="/#ask" data-track="click/start-conversation-acg">Start a conversation</a>
+        </p>
+      </section>
+
+      <p class="natal-credit">
+        Map data: <a href="https://www.naturalearthdata.com/">Natural Earth</a> (public domain), via
+        world-atlas. Place names © <a href="https://www.geonames.org/">GeoNames</a>, CC BY 4.0. Positions from
+        the Swiss Ephemeris, calculated in your browser with{' '}
+        <a href="https://github.com/swisseph-js/swisseph">swisseph-js</a>, open source under the AGPL.
+      </p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import { geoMercator, geoPath, geoGraticule10 } from 'd3-geo';
+  import { zoom, type D3ZoomEvent } from 'd3-zoom';
+  import { select, pointer } from 'd3-selection';
+  import { feature } from 'topojson-client';
+  import type { Topology, GeometryCollection } from 'topojson-specification';
+  import worldURL from 'world-atlas/countries-110m.json?url';
+  import { linesFor, linesNear, ORB_KM, horizonLon, ANGLES, type Line, type Angle, type LonLat } from '../lib/acg';
+  import { ACG_BODIES, ANGLE_LABEL, MEANING } from '../data/acg-lines';
+  import { initBirthForm, initPlace, placeName, coords, track } from '../lib/birth-form';
+  import { birthQuery } from '../lib/birth-query';
+
+  const W = 960, H = 620;
+  const SVG = 'http://www.w3.org/2000/svg';
+  const projection = geoMercator().scale(W / (2 * Math.PI)).translate([W / 2, H / 2]).clipExtent([[0, 0], [W, H]]);
+  const path = geoPath(projection);
+
+  const hiddenBodies = new Set<string>();
+  const hiddenAngles = new Set<Angle>();
+  let lines: Line[] = [];
+
+  const lonText = (lon: number) => `${Math.abs(lon).toFixed(1)}° ${lon >= 0 ? 'E' : 'W'}`;
+
+  function svgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string>) {
+    const e = document.createElementNS(SVG, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    return e;
+  }
+
+  let world: Promise<string> | undefined;
+  function countries() {
+    world ??= fetch(worldURL).then((r) => r.json()).then((topo: Topology) =>
+      path(feature(topo, topo.objects.countries as GeometryCollection)) ?? '')
+      .catch((e) => { world = undefined; throw e; });
+    return world;
+  }
+
+  function applyVisibility(root: Element) {
+    root.querySelectorAll<SVGElement>('[data-body]').forEach((e) => {
+      const off = hiddenBodies.has(e.dataset.body!) || hiddenAngles.has(e.dataset.angle as Angle);
+      e.style.display = off ? 'none' : '';
+    });
+  }
+
+  function chips(host: HTMLElement, items: { id: string; label: string }[], hidden: Set<string>, onChange: () => void) {
+    host.replaceChildren(...items.map(({ id, label }) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'zr-chip';
+      b.textContent = label;
+      b.setAttribute('aria-pressed', String(!hidden.has(id)));
+      b.addEventListener('click', () => {
+        if (hidden.has(id)) hidden.delete(id); else hidden.add(id);
+        b.setAttribute('aria-pressed', String(!hidden.has(id)));
+        onChange();
+      });
+      return b;
+    }));
+  }
+
+  async function drawMap(host: HTMLElement, birthAt: LonLat, onPoint: (p: LonLat) => void) {
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'acg-svg' });
+    const g = svgEl('g', {});
+    g.append(
+      svgEl('path', { d: path(geoGraticule10()) ?? '', class: 'acg-graticule' }),
+      svgEl('path', { d: await countries(), class: 'acg-land' }),
+    );
+    for (const line of lines) {
+      const body = ACG_BODIES.find((b) => b.id === line.body)!;
+      const d = path({ type: 'MultiLineString', coordinates: line.paths }) ?? '';
+      const p = svgEl('path', { d, class: `acg-line acg-${line.angle}${body.outer ? ' acg-outer' : ''}` });
+      p.style.stroke = body.color;
+      p.dataset.body = line.body;
+      p.dataset.angle = line.angle;
+      g.append(p);
+      // label at the northern end of the line, inside the map
+      const end = line.paths.flat().reduce((a, b) => (b[1] > a[1] ? b : a));
+      const xy = projection([end[0], Math.min(end[1], 72)]);
+      if (xy) {
+        const t = svgEl('text', { x: String(xy[0]), y: String(xy[1] + 14), class: 'acg-label' });
+        t.textContent = `${body.glyph} ${line.angle}`;
+        t.style.fill = body.color;
+        t.dataset.body = line.body;
+        t.dataset.angle = line.angle;
+        g.append(t);
+      }
+    }
+    const birth = projection(birthAt);
+    if (birth) g.append(svgEl('circle', { cx: String(birth[0]), cy: String(birth[1]), r: '4', class: 'acg-birth' }));
+    const pick = svgEl('circle', { r: '5', class: 'acg-pick', visibility: 'hidden' });
+    g.append(pick);
+    svg.append(g);
+    host.replaceChildren(svg);
+    applyVisibility(svg);
+
+    const z = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 8])
+      .translateExtent([[0, 0], [W, H]])
+      .on('zoom', (e: D3ZoomEvent<SVGSVGElement, unknown>) => {
+        g.setAttribute('transform', e.transform.toString());
+        g.style.setProperty('--k', String(e.transform.k));
+      });
+    const sel = select(svg as SVGSVGElement).call(z);
+    sel.on('click', (e: MouseEvent) => {
+      if (e.defaultPrevented) return;                 // the end of a drag
+      const [x, y] = pointer(e, g);
+      const ll = projection.invert?.([x, y]);
+      if (!ll) return;
+      pick.setAttribute('cx', String(x));
+      pick.setAttribute('cy', String(y));
+      pick.setAttribute('visibility', 'visible');
+      onPoint([ll[0], ll[1]]);
+    });
+    return (p: LonLat) => {
+      const xy = projection(p);
+      if (!xy) return;
+      pick.setAttribute('cx', String(xy[0]));
+      pick.setAttribute('cy', String(xy[1]));
+      pick.setAttribute('visibility', 'visible');
+    };
+  }
+
+  function showNear(host: HTMLElement, p: LonLat, label: string) {
+    const near = linesNear(p, lines.filter((l) => !hiddenBodies.has(l.body) && !hiddenAngles.has(l.angle)));
+    const h = document.createElement('h3');
+    h.textContent = label;
+    if (!near.length) {
+      const none = document.createElement('p');
+      none.textContent = `No line passes within ${ORB_KM} km of here: the place is quiet in your map, neither pulling nor pushing.`;
+      host.replaceChildren(h, none);
+      return;
+    }
+    const ul = document.createElement('ul');
+    ul.replaceChildren(...near.map(({ line, km }) => {
+      const body = ACG_BODIES.find((b) => b.id === line.body)!;
+      const li = document.createElement('li');
+      const head = document.createElement('strong');
+      head.textContent = `${body.label} ${ANGLE_LABEL[line.angle]}, ${Math.round(km)} km`;
+      const text = document.createElement('p');
+      text.textContent = MEANING[`${line.body}-${line.angle}`];
+      li.append(head, text);
+      return li;
+    }));
+    host.replaceChildren(h, ul);
+  }
+
+  function initACG() {
+    const form = document.getElementById('acg-form') as HTMLFormElement | null;
+    if (!form) return;
+    const result = document.getElementById('acg-result')!;
+    const mapHost = document.getElementById('acg-map')!;
+    const nearHost = document.getElementById('acg-near')!;
+    let mark: ((p: LonLat) => void) | undefined;
+    let lastPoint: { p: LonLat; label: string } | null = null;
+    let birthAt: LonLat = [0, 0];
+
+    const refresh = () => {
+      applyVisibility(mapHost);
+      if (lastPoint) showNear(nearHost, lastPoint.p, lastPoint.label);
+    };
+    chips(document.getElementById('acg-planets')!, ACG_BODIES.map((b) => ({ id: b.id, label: `${b.glyph} ${b.label}` })), hiddenBodies, refresh);
+    chips(document.getElementById('acg-angles')!, ANGLES.map((a) => ({ id: a, label: a })), hiddenAngles as Set<string>, refresh);
+
+    const point = (p: LonLat, label: string) => { lastPoint = { p, label }; showNear(nearHost, p, label); };
+    initPlace(document.getElementById('acg-city') as HTMLInputElement, document.getElementById('acg-city-list') as HTMLUListElement,
+      (pl) => { if (!pl) return; const p: LonLat = [pl.longitude, pl.latitude]; mark?.(p); point(p, placeName(pl)); });
+
+    initBirthForm(form, async (b) => {
+      const { computeEquatorial } = await import('../lib/ephemeris');
+      const eq = await computeEquatorial(`${b.date}T${b.time}`, b.place.time_zone, ACG_BODIES.map((x) => x.id));
+      lines = eq.bodies.flatMap((x) => linesFor(x.name, x.ra, x.dec, eq.gast));
+      birthAt = [b.place.longitude, b.place.latitude];
+
+      const born = new Date(`${b.date}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('acg-title')!.textContent = `Born ${born}, ${b.time}`;
+      document.getElementById('acg-meta')!.textContent = `${placeName(b.place)} · ${coords(b.place)} · marked on the map with a dot`;
+      (document.getElementById('acg-back') as HTMLAnchorElement).href = `/natal-chart/${birthQuery(b, placeName(b.place))}`;
+
+      document.getElementById('acg-rows')!.replaceChildren(...eq.bodies.map((x) => {
+        const body = ACG_BODIES.find((y) => y.id === x.name)!;
+        const mc = lines.find((l) => l.body === x.name && l.angle === 'MC')!.paths[0][0][0];
+        const cells = [
+          lonText(mc), lonText(((mc + 360) % 360) - 180),
+          ...(['ASC', 'DSC'] as const).map((a) => {
+            const lon = horizonLon(x.ra, x.dec, eq.gast, b.place.latitude, a);
+            return lon === null ? 'never on the horizon' : lonText(lon);
+          }),
+        ];
+        const tr = document.createElement('tr');
+        const th = document.createElement('th');
+        th.scope = 'row';
+        th.textContent = body.label;
+        tr.append(th, ...cells.map((c) => { const td = document.createElement('td'); td.textContent = c; return td; }));
+        return tr;
+      }));
+
+      result.hidden = false;
+      mark = await drawMap(mapHost, birthAt, (p) =>
+        point(p, `${Math.abs(p[1]).toFixed(1)}° ${p[1] >= 0 ? 'N' : 'S'}, ${lonText(p[0])}`));
+      point(birthAt, `${placeName(b.place)}, where you were born`);
+      track('astrocartography', { place: placeName(b.place).slice(0, 80), date: b.date });
+      result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+  }
+  document.addEventListener('astro:page-load', initACG);
+</script>

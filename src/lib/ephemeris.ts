@@ -114,21 +114,28 @@ function offsetText(ms: number) {
 
 // ---- the chart
 
-export async function computeChart(r: ChartRequest): Promise<Positions> {
-  const { utc, off } = toUTC(r.datetime, r.tz);
-  const ids = r.bodies.map((b) => {
+const EQ_FLAGS = CalculationFlag.SwissEphemeris | CalculationFlag.Speed | CalculationFlag.Equatorial;
+
+function bodyIds(bodies: string[]) {
+  return bodies.map((b) => {
     const id = BODY_IDS[b];
     if (id === undefined) throw new Error(`Unknown body ${b}.`);
     return id;
   });
+}
+
+// the engine, the UTC instant and its Julian day, with the ephemeris block loaded
+async function moment(datetime: string, tz: string) {
+  const { utc, off } = toUTC(datetime, tz);
   const swe = await engine();
   const at = new Date(utc);
   const year = at.getUTCFullYear();
   if (!await loadBlock(swe, year)) throw new Error('No high-precision ephemeris file covers this date.');
+  return { swe, at, off, year, jd: swe.dateToJulianDay(at) };
+}
 
-  const jd = swe.dateToJulianDay(at);
-  swe.setTopocentric(r.lon, r.lat, r.alt ?? 0);
-  const calc = () => ids.map((id) => swe.calculatePosition(jd, id, FLAGS));
+async function positions(swe: SwissEphemeris, jd: number, year: number, ids: number[], flags: number) {
+  const calc = () => ids.map((id) => swe.calculatePosition(jd, id, flags));
   let found = calc();
   // the library drops to Moshier silently when a file is missing: a chart
   // at the edge of a block can need the neighbouring block's files too
@@ -139,6 +146,14 @@ export async function computeChart(r: ChartRequest): Promise<Positions> {
       throw new Error('No high-precision ephemeris file covers this date.');
     }
   }
+  return found;
+}
+
+export async function computeChart(r: ChartRequest): Promise<Positions> {
+  const ids = bodyIds(r.bodies);
+  const { swe, at, off, year, jd } = await moment(r.datetime, r.tz);
+  swe.setTopocentric(r.lon, r.lat, r.alt ?? 0);
+  const found = await positions(swe, jd, year, ids, FLAGS);
 
   const result: Positions = {
     input: { local: r.datetime, utc: at.toISOString(), utc_offset: offsetText(off) },
@@ -158,4 +173,21 @@ export async function computeChart(r: ChartRequest): Promise<Positions> {
     }
   }
   return result;
+}
+
+// ---- for astrocartography: geocentric right ascension and declination
+// (lines are drawn for the Earth's centre, not one place on it) and
+// Greenwich apparent sidereal time
+
+export interface EquatorialChart { utc: string; gast: number; bodies: { name: string; ra: number; dec: number }[] }
+
+export async function computeEquatorial(datetime: string, tz: string, bodies: string[]): Promise<EquatorialChart> {
+  const ids = bodyIds(bodies);
+  const { swe, at, year, jd } = await moment(datetime, tz);
+  const found = await positions(swe, jd, year, ids, EQ_FLAGS);
+  return {
+    utc: at.toISOString(),
+    gast: swe.siderealTime(jd) * 15,          // hours to degrees
+    bodies: found.map((p, i) => ({ name: bodies[i], ra: p.longitude, dec: p.latitude })),
+  };
 }

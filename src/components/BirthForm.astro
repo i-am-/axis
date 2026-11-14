@@ -1,0 +1,40 @@
+---
+// The birth-data form shared by /natal-chart/ and /astrocartography/.
+// src/lib/birth-form.ts wires it up.
+interface Props { id: string; submitLabel: string; timeRequired?: boolean }
+const { id, submitLabel, timeRequired = false } = Astro.props;
+---
+<form class="natal-form" id={id} novalidate>
+  <div class="natal-fields">
+    <div>
+      <label for="birth-date">Date of birth</label>
+      <input type="date" id="birth-date" required min="1000-01-01" max="2999-12-31" />
+    </div>
+    <div>
+      <label for="birth-time">Time of birth, local</label>
+      <input type="time" id="birth-time" required step="60" value={timeRequired ? undefined : '12:00'} />
+      {timeRequired ? (
+        <p class="field-hint">Needed to the minute: four minutes either way moves every line by about 1° of longitude.</p>
+      ) : (
+        <label class="check-label">
+          <input type="checkbox" id="time-unknown" /> I don’t know the time
+        </label>
+      )}
+    </div>
+    <div class="place-field">
+      <label for="birth-place" id="birth-place-label">Place of birth</label>
+      <input
+        type="text" id="birth-place" required autocomplete="off" spellcheck="false"
+        role="combobox" aria-autocomplete="list" aria-expanded="false"
+        aria-controls="place-list" aria-describedby="place-hint"
+        placeholder="Start typing a town or city"
+      />
+      <ul id="place-list" role="listbox" aria-labelledby="birth-place-label" hidden></ul>
+      <p id="place-hint" class="field-hint">Any language: Dublin, Baile Átha Cliath, Дублин.</p>
+    </div>
+  </div>
+  <div class="natal-actions">
+    <button class="btn btn-primary" type="submit">{submitLabel}</button>
+    <p class="natal-status" id="birth-status" role="status" aria-live="polite"></p>
+  </div>
+</form>
