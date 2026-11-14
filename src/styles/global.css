@@ -1142,40 +1142,40 @@ html.js [data-reveal] { opacity: 1; transform: none; }
 .natal-form { max-width: 52rem; font-family: var(--ui); }
 .natal-fields { display: grid; grid-template-columns: 11rem 9rem minmax(0, 1fr); gap: 1rem; align-items: start; }
 .natal-form label { display: block; margin-bottom: .35rem; font-size: .86rem; color: var(--ink-soft); }
-.natal-form input {
+.natal-form input, #acg-city {
   width: 100%; font-family: var(--ui); font-size: .98rem; color: var(--ink);
   background: var(--plate); border: 1px solid var(--hair); border-radius: 3px; padding: .62em .85em;
   color-scheme: dark;
 }
-:root[data-bs-theme="light"] .natal-form input { color-scheme: light; }
-.natal-form input:focus { outline: none; border-color: var(--gold); }
+:root[data-bs-theme="light"] .natal-form input, :root[data-bs-theme="light"] #acg-city { color-scheme: light; }
+.natal-form input:focus, #acg-city:focus { outline: none; border-color: var(--gold); }
 .field-hint { font-size: .8rem; color: var(--ink-faint); margin: .4rem 0 0; }
 .natal-form .check-label { display: flex; align-items: center; gap: .45rem; margin: .5rem 0 0; font-size: .82rem; cursor: pointer; }
 .natal-form .check-label input { width: auto; accent-color: var(--gold-fill); }
 .natal-form input:disabled { opacity: .5; }
 
 .place-field { position: relative; }
-#place-list {
+#place-list, #acg-city-list {
   position: absolute; z-index: 20; left: 0; right: 0; top: 4.35rem;
   margin: 0; padding: .3rem 0; list-style: none; max-height: 20rem; overflow-y: auto;
   background: var(--plate-lit); border: 1px solid var(--gold-dim); border-radius: 3px;
   box-shadow: 0 .6rem 1.6rem rgb(0 0 0 / .25);
 }
-#place-list li {
+#place-list li, #acg-city-list li {
   display: grid; grid-template-columns: 1.5rem minmax(0, 1fr) auto; column-gap: .7rem; row-gap: .1rem;
   align-items: baseline; padding: .5rem .85rem; cursor: pointer;
 }
-#place-list .place-flag {
+#place-list .place-flag, #acg-city-list .place-flag {
   grid-row: 1 / span 2; align-self: center; width: 1.5rem; height: auto;
   border-radius: 2px; box-shadow: 0 0 0 1px var(--hair);
 }
-#place-list .place-coords {
+#place-list .place-coords, #acg-city-list .place-coords {
   font-size: .78rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-#place-list .place-where { grid-column: 2 / -1; }
-#place-list li[aria-selected="true"], #place-list li:hover { background: var(--plate); box-shadow: inset 2px 0 0 var(--gold); }
-#place-list .place-where { font-size: .8rem; color: var(--ink-faint); }
-#place-list .place-empty { display: block; cursor: default; color: var(--ink-soft); font-size: .9rem; }
+#place-list .place-where, #acg-city-list .place-where { grid-column: 2 / -1; }
+#place-list li[aria-selected="true"], #acg-city-list li[aria-selected="true"], #place-list li:hover, #acg-city-list li:hover { background: var(--plate); box-shadow: inset 2px 0 0 var(--gold); }
+#place-list .place-where, #acg-city-list .place-where { font-size: .8rem; color: var(--ink-faint); }
+#place-list .place-empty, #acg-city-list .place-empty { display: block; cursor: default; color: var(--ink-soft); font-size: .9rem; }
 
 .natal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.2rem; margin-top: 1.4rem; }
 .natal-status { margin: 0; font-size: .92rem; color: var(--ink-soft); }
@@ -1259,5 +1259,34 @@ html.js [data-reveal] { opacity: 1; transform: none; }
   .natal-spread-table tr, .natal-spread-table th, .natal-spread-table td { display: block; width: auto; }
   .natal-spread-table tbody th { padding-bottom: 0; border-bottom: 0; color: var(--gold); }
   .natal-spread-table .spread-card { padding-bottom: .4em; border-bottom: 0; }
-  #place-list .place-coords { grid-column: 2 / -1; }
+  #place-list .place-coords, #acg-city-list .place-coords { grid-column: 2 / -1; }
 }
+
+/* Astrocartography — /astrocartography/ */
+.acg-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0 0; }
+.acg-map { margin-top: 1rem; border: 1px solid var(--hair); border-radius: 6px; overflow: hidden; background: var(--plate); touch-action: none; }
+.acg-svg { display: block; width: 100%; height: auto; cursor: grab; }
+.acg-svg:active { cursor: grabbing; }
+.acg-graticule { fill: none; stroke: var(--hair); stroke-width: .5; vector-effect: non-scaling-stroke; }
+.acg-land { fill: var(--plate-lit); stroke: var(--hair); stroke-width: .6; vector-effect: non-scaling-stroke; }
+.acg-line { fill: none; stroke-width: 1.8; vector-effect: non-scaling-stroke; }
+.acg-outer { stroke-width: 1.1; }
+.acg-MC { stroke-dasharray: none; }
+.acg-IC { stroke-dasharray: 1.5 4; stroke-linecap: round; }
+.acg-ASC { stroke-dasharray: 8 5; }
+.acg-DSC { stroke-dasharray: 10 4 2 4; }
+.acg-label { font: calc(11px / var(--k, 1)) var(--ui); text-anchor: middle; paint-order: stroke; stroke: var(--plate); stroke-width: calc(3px / var(--k, 1)); }
+.acg-birth { fill: var(--gold); stroke: var(--plate); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.acg-pick { fill: none; stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.acg-legend { font-family: var(--ui); font-size: .82rem; color: var(--ink-faint); margin: .6rem 0 0; }
+.acg-key { display: inline-block; width: 1.8rem; height: 0; border-top: 2px solid var(--ink-soft); vertical-align: middle; margin: 0 .3rem 0 .8rem; }
+.acg-key.acg-IC { border-top-style: dotted; }
+.acg-key.acg-ASC, .acg-key.acg-DSC { border-top-style: dashed; }
+.acg-city { margin-top: 2rem; max-width: 46rem; font-family: var(--ui); }
+.acg-city label { display: block; margin-bottom: .35rem; font-size: .86rem; color: var(--ink-soft); }
+.acg-near h3 { font-family: var(--serif); font-weight: 400; font-size: 1.2rem; margin: 1.2rem 0 .4rem; }
+.acg-near ul { list-style: none; padding: 0; margin: 0; }
+.acg-near li { padding: .7rem 0; border-bottom: 1px solid var(--hair); }
+.acg-near li p { margin: .25rem 0 0; color: var(--ink-soft); font-size: .92rem; }
+.acg-table { margin-top: 2rem; }
+.acg-table caption { text-align: left; font-family: var(--serif); font-size: 1.2rem; padding-bottom: .5rem; }
