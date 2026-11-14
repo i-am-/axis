@@ -81,3 +81,16 @@ Refresh both (needs curl, unzip, Node 24):
 ```sh
 scripts/fetch-data.sh
 ```
+
+- **Hellenistic reading**: computed in the browser by
+  `src/lib/hellenistic.ts` from the same positions, with the dignity, bound
+  and sign tables in `src/data/dignities.ts`. Needs no data files. Sect,
+  lots, profections and zodiacal releasing require the birth time.
+
+## Astrocartography
+
+`/astrocartography/` draws the in-mundo lines (Jim Lewis) on a world map:
+the MC, IC, ASC and DSC meridians of the Sun through Pluto at the birth
+moment. The line geometry is computed by `src/lib/acg.ts`; a city lists the
+lines within 700 km (`ORB_KM`). Coastlines come from Natural Earth
+(public domain) via the `world-atlas` package, bundled with the site.

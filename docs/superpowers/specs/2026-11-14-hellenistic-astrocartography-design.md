@@ -45,8 +45,8 @@ Pure calculation modules on top of the existing engine. Pages only render.
 | `src/pages/resources.astro` | extend | a card for the map |
 | `world-atlas/countries-110m.json` | dependency | imported with `?url`; Vite hashes it into `/_astro/`, already cached as immutable |
 
-New dependencies: `d3-geo`, `d3-zoom`, `d3-selection`, `topojson-client`;
-`vitest` as a dev dependency with an `npm test` script.
+New dependencies: `d3-geo`, `d3-zoom`, `d3-selection`, `topojson-client`,
+`world-atlas`; `vitest` as a dev dependency with an `npm test` script.
 
 "Pure" means no DOM, no fetch: inputs are plain data (positions, dates,
 coordinates), outputs are plain data. Each module is unit-tested alone.
