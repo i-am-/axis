@@ -79,3 +79,47 @@ export function profection(birth: string, today: string, ascSign: number): Profe
   const next = new Date(Date.UTC(by + age + 1, bm - 1, bd)).toISOString().slice(0, 10);
   return { age, house: (age % 12) + 1, sign, lord: RULER[sign], next };
 }
+
+// ---- zodiacal releasing (Valens, Anthology IV; Brennan 2017, ch. 18)
+
+const DAY = 86_400_000;
+/** Valens' year of 360 days; L2 counts the same numbers in 30-day months. */
+export const ZR_YEAR_DAYS = 360;
+export const ZR_MONTH_DAYS = 30;
+
+export type Peak = 'tenth' | 'angular' | null;
+
+/** Peak periods fall in the signs angular to Fortune; the 10th from it is the strongest. */
+export function peakOf(sign: number, fortuneSign: number): Peak {
+  const d = (sign - fortuneSign + 12) % 12;
+  return d === 9 ? 'tenth' : d % 3 === 0 ? 'angular' : null;
+}
+
+export interface ZRPeriod { sign: number; start: number; end: number; peak: Peak; lb: boolean }
+
+/** Level 1 from a lot's sign, from birth until `years` of age (calendar years). */
+export function releaseL1(lotSign: number, birthUTC: number, fortuneSign: number, years = 90): ZRPeriod[] {
+  const until = birthUTC + years * 365.25 * DAY;
+  const out: ZRPeriod[] = [];
+  for (let s = lotSign, t = birthUTC; t < until; s = (s + 1) % 12) {
+    const end = t + MINOR_YEARS[s] * ZR_YEAR_DAYS * DAY;
+    out.push({ sign: s, start: t, end, peak: peakOf(s, fortuneSign), lb: false });
+    t = end;
+  }
+  return out;
+}
+
+/** Level 2 inside one L1 period, with the loosing of the bond after twelve signs. */
+export function releaseL2(l1: ZRPeriod, fortuneSign: number): ZRPeriod[] {
+  const out: ZRPeriod[] = [];
+  let s = l1.sign;
+  for (let t = l1.start, n = 0; t < l1.end; n++) {
+    const lb = n === 12;
+    if (lb) s = (l1.sign + 6) % 12;
+    const end = Math.min(t + MINOR_YEARS[s] * ZR_MONTH_DAYS * DAY, l1.end);
+    out.push({ sign: s, start: t, end, peak: peakOf(s, fortuneSign), lb });
+    t = end;
+    s = (s + 1) % 12;
+  }
+  return out;
+}
