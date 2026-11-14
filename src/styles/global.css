@@ -1197,7 +1197,7 @@ html.js [data-reveal] { opacity: 1; transform: none; }
 .natal-table .retro { text-decoration: none; color: var(--gold); }
 /* time unknown: no houses to show, in the wheel or the table */
 .natal-wheel.no-houses [id$="-radix-cusps"], .natal-wheel.no-houses [id$="-radix-axis"] { display: none; }
-.natal-table.no-houses td:last-child, .natal-table.no-houses thead th:last-child { display: none; }
+.natal-table.no-houses td:nth-child(n+3), .natal-table.no-houses thead th:nth-child(n+3) { display: none; }
 /* the Symbolon spread under the chart (lib/symbolon.ts) */
 .natal-spread { margin-top: clamp(2.4rem, 6vw, 3.6rem); }
 .natal-spread h3 { margin: 0; }
@@ -1227,6 +1227,28 @@ html.js [data-reveal] { opacity: 1; transform: none; }
 
 .natal-credit { font-family: var(--ui); font-size: .8rem; color: var(--ink-faint); margin-top: 2.6rem; }
 .natal-credit a { color: inherit; }
+
+/* Hellenistic reading under the natal chart */
+.natal-hellenistic { margin-top: clamp(2.4rem, 6vw, 3.6rem); }
+.hel-block { margin-top: 2rem; max-width: 46rem; font-family: var(--ui); overflow-x: auto; }
+.hel-block h4 { font-family: var(--serif); font-weight: 400; font-size: 1.2rem; margin: 0 0 .6rem; }
+.hel-note { font-size: .92rem; color: var(--ink-soft); margin: .5rem 0 0; }
+.hel-roles { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; margin: .8rem 0 0; font-size: .92rem; }
+.hel-roles dt { color: var(--gold); }
+.hel-roles dd { margin: 0; color: var(--ink-soft); }
+.hel-dignities { margin: .8rem 0 0; padding-left: 1.1rem; font-size: .88rem; color: var(--ink-soft); }
+.hel-table { margin-top: .4rem; }
+.zr-toggle { display: flex; gap: .5rem; margin: .8rem 0; }
+.zr-chip { font: inherit; font-size: .85rem; padding: .3rem .8rem; border: 1px solid var(--hair); border-radius: 999px; background: transparent; color: var(--ink-soft); cursor: pointer; }
+.zr-chip[aria-pressed="true"] { border-color: var(--gold); color: var(--ink); }
+.zr-band { position: relative; display: flex; height: 2.2rem; margin: .8rem 0; border: 1px solid var(--hair); border-radius: 4px; overflow: hidden; }
+.zr-seg { flex-basis: 0; min-width: 0; display: grid; place-items: center; font-size: .72rem; color: var(--ink-faint); border-right: 1px solid var(--hair); overflow: hidden; }
+.zr-angular { background: color-mix(in srgb, var(--gold) 14%, transparent); color: var(--ink-soft); }
+.zr-tenth { background: color-mix(in srgb, var(--gold) 30%, transparent); color: var(--ink); }
+.zr-now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--rubric); }
+.zr-l2 { margin-top: .8rem; font-size: .9rem; }
+.zr-l2 summary { cursor: pointer; color: var(--gold); }
+.natal-next { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.6rem; margin-top: 2.4rem; font-family: var(--ui); }
 
 @media (max-width: 56rem) {
   .natal-fields { grid-template-columns: 1fr 1fr; }

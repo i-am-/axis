@@ -26,7 +26,7 @@ import BirthForm from '../components/BirthForm.astro';
           <div class="natal-wheel" id="natal-wheel" aria-hidden="true"></div>
           <table class="natal-table" id="natal-table">
             <caption class="sr-only">Planetary positions</caption>
-            <thead><tr><th scope="col">Body</th><th scope="col">Position</th><th scope="col">House</th></tr></thead>
+            <thead><tr><th scope="col">Body</th><th scope="col">Position</th><th scope="col">House</th><th scope="col"><abbr title="whole-sign">WS</abbr></th></tr></thead>
             <tbody id="natal-rows"></tbody>
           </table>
         </div>
@@ -45,6 +45,16 @@ import BirthForm from '../components/BirthForm.astro';
             <tbody id="natal-spread-rows"></tbody>
           </table>
         </section>
+
+        <section class="natal-hellenistic" aria-labelledby="natal-hellenistic-title">
+          <h3 id="natal-hellenistic-title">Hellenistic reading</h3>
+          <div id="natal-hellenistic"></div>
+        </section>
+
+        <p class="natal-next">
+          <a id="natal-map-link" href="/astrocartography/" hidden>See your lines on the map</a>
+          <a class="btn btn-primary" href="/#ask" data-track="click/start-conversation-natal">Start a conversation</a>
+        </p>
       </section>
 
       <p class="natal-credit">
@@ -60,6 +70,8 @@ import BirthForm from '../components/BirthForm.astro';
 <script>
   import { Chart, AspectCalculator } from '@astrodraw/astrochart';
   import { initBirthForm, placeName, coords, track } from '../lib/birth-form';
+  import { wsHouse } from '../lib/hellenistic';
+  import { birthQuery } from '../lib/birth-query';
   import type { Positions } from '../lib/ephemeris';
 
   // the ephemeris's bodies, as AstroChart names and draws them
@@ -126,7 +138,7 @@ import BirthForm from '../components/BirthForm.astro';
       const d = lon % 30, deg = Math.floor(d), min = Math.floor((d - deg) * 60);
       return `${deg}°${String(min).padStart(2, '0')}′ ${signs[Math.floor(lon / 30) % 12]}`;
     };
-    const row = (label: string, position: string, house: string, retro = false) => {
+    const row = (label: string, position: string, house: string, ws: string, retro = false) => {
       const tr = document.createElement('tr');
       const th = document.createElement('th');
       th.scope = 'row';
@@ -142,16 +154,19 @@ import BirthForm from '../components/BirthForm.astro';
       }
       const h = document.createElement('td');
       h.textContent = house;
-      tr.append(th, pos, h);
+      const w = document.createElement('td');
+      w.textContent = ws;
+      tr.append(th, pos, h, w);
       return tr;
     };
     const h = data.houses;
+    const ws = (lon: number) => (h ? String(wsHouse(lon, h.ascendant)) : '');
     const rows = data.bodies.map((b) => {
       const label = BODIES.find(([api]) => api === b.name)?.[2] ?? b.name;
       // the formatted string carries seconds; minutes are plenty in a table
-      return row(label, zodiacal(b.longitude), h ? String(houseOf(b.longitude, h.cusps)) : '', b.retrograde);
+      return row(label, zodiacal(b.longitude), h ? String(houseOf(b.longitude, h.cusps)) : '', ws(b.longitude), b.retrograde);
     });
-    if (h) rows.push(row('Ascendant', zodiacal(h.ascendant), '1'), row('Midheaven', zodiacal(h.mc), '10'));
+    if (h) rows.push(row('Ascendant', zodiacal(h.ascendant), '1', '1'), row('Midheaven', zodiacal(h.mc), '10', ws(h.mc)));
     tbody.replaceChildren(...rows);
     tbody.closest('table')?.classList.toggle('no-houses', !h);
   }
@@ -232,6 +247,11 @@ import BirthForm from '../components/BirthForm.astro';
       drawWheel(wheel, last);
       fillTable(document.getElementById('natal-rows')!, last);
       drawCards(last);
+      const { renderHellenistic } = await import('../lib/hellenistic-view');
+      renderHellenistic(document.getElementById('natal-hellenistic')!, last, b.date);
+      const map = document.getElementById('natal-map-link') as HTMLAnchorElement;
+      map.hidden = !b.time;
+      map.href = `/astrocartography/${birthQuery(b, placeName(b.place))}`;
       track('natal-chart', { place: placeName(b.place), date: b.date });
       result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
