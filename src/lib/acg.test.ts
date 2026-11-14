@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { linesFor, splitAntimeridian, distanceKm, distanceToLine, linesNear, horizonLon, norm180 } from './acg';
+import { ACG_BODIES, MEANING } from '../data/acg-lines';
+import { linesFor, splitAntimeridian, distanceKm, distanceToLine, linesNear, horizonLon, norm180, ANGLES } from './acg';
 
 const rad = Math.PI / 180;
 // altitude from the standard formula, independent of acg.ts's acos
@@ -68,4 +69,9 @@ describe('geometry', () => {
     expect(near[0].line.angle).toBe('MC');
     expect(near.every((n) => n.km <= 700)).toBe(true);
   });
+});
+
+it('every planet and angle has a meaning', () => {
+  for (const b of ACG_BODIES) for (const a of ANGLES) expect(MEANING[`${b.id}-${a}`], `${b.id}-${a}`).toBeTruthy();
+  expect(Object.keys(MEANING)).toHaveLength(40);
 });
