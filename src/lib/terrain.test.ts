@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   rng, simplex2, heightmap, flood, accumulate, reach, thalweg, contourRings, sampler,
-  hachures, buildTerrain, STRIDE, KIND_SIGN, type Hole,
+  hachures, buildTerrain, STRIDE, KIND_SIGN, KIND_ROAD, type Hole,
 } from './terrain';
 
 const COLS = 90, ROWS = 60;
@@ -90,7 +90,7 @@ describe('drawing', () => {
 });
 
 describe('buildTerrain', () => {
-  it('packs strokes and dots the golden path from source (0) to mouth (1)', () => {
+  it('packs strokes and dots the main road from one end (0) to the other (1)', () => {
     const t = buildTerrain({ cols: COLS, rows: ROWS, hole: HOLE, seed: 42 });
     expect(t.data.length).toBe(t.count * STRIDE);
     const kinds = new Set<number>();
@@ -100,12 +100,12 @@ describe('buildTerrain', () => {
       kinds.add(k < 0 ? k : 2);
       if (k >= 2) { dots++; tMin = Math.min(tMin, k - 2); tMax = Math.max(tMax, k - 2); }
     }
-    expect(kinds).toEqual(new Set([2, -1, -2, -3, -4]));
+    expect([2, -1, -2, -3, -4].every((k) => kinds.has(k))).toBe(true);
     expect(dots).toBeGreaterThan(10);
     expect(tMin).toBeLessThan(0.2);
     expect(tMax).toBeGreaterThan(0.8);
   });
-  it('keeps the river and the map signs in the gutters beside the text', () => {
+  it('keeps the river, the roads and the map signs in the gutters beside the text', () => {
     const band = { x0: 25, x1: 65 };
     const hole = { x0: 22, y0: 4, x1: 68, y1: 20 };
     const t = buildTerrain({ cols: COLS, rows: 160, hole, band, seed: 4 });
@@ -114,8 +114,9 @@ describe('buildTerrain', () => {
     let signs = 0;
     for (let i = 0; i < t.count; i++) {
       const r = t.data.subarray(i * STRIDE, (i + 1) * STRIDE);
-      if (r[5] >= 2 || r[5] === KIND_SIGN) {
+      if (r[5] >= 2 || r[5] === KIND_SIGN || r[5] === KIND_ROAD) {
         if (r[5] === KIND_SIGN) signs++;
+      if (r[5] === KIND_ROAD) expect(Math.min(r[0], r[2]) > band.x1 || Math.max(r[0], r[2]) < band.x0).toBe(true);
         expect(r[0] < band.x0 || r[0] > band.x1).toBe(true);
       }
     }

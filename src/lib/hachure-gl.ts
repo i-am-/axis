@@ -1,10 +1,10 @@
 // Draws the terrain strokes (terrain.ts) with WebGL2: every hachure, contour
-// segment and river dot is one instance of a quad, expanded in the shaders to
+// segment, map sign stroke, road and river dot is one instance of a quad, expanded in the shaders to
 // an antialiased shape: contours are even capsules, dots are discs, hachures
 // are wedges, broad at the top of the slope and as broad as the slope is steep. One draw call per frame, and frames
 // are drawn only on demand: a gauge change, a resize, a theme flip.
 //
-// The golden path is a uniform: the river dot at position t along the river
+// The golden path is a uniform: the main road's dot at position t along it
 // turns gold once t ≤ uProgress, with a short feather at
 // the front. Strokes are in document px; the canvas covers the viewport and
 // is drawn at the current scroll.
@@ -43,7 +43,8 @@ void main() {
   bool dot_ = k >= 1.5;
   float g = dot_ ? 1.0 - smoothstep(uProgress - 0.015, uProgress, k - 2.0) : 0.0;
   // half-widths at the start and the end of the stroke
-  vec2 hw = k <= -3.5 ? vec2(0.5)                                       // map sign
+  vec2 hw = k <= -4.5 ? vec2(0.5)                                       // road
+          : k <= -3.5 ? vec2(0.95)                                      // map sign, bold
           : k <= -1.5 ? vec2(0.375)                                     // contour
           : dot_      ? vec2(1.2 * mix(1.0, 1.25, g))                   // river dot
           : vec2(mix(0.35, 1.9, aWK.x), 0.12);                         // hachure wedge
@@ -81,6 +82,7 @@ void main() {
   m *= 1.0 - smoothstep(uFade.x, uFade.y, vPos.y);
   float k = vKind.x, g = vKind.y;
   float base = k >= 1.5 ? 2.5 * uAlpha.x
+             : k <= -4.5 ? 0.6 * uSign
              : k <= -3.5 ? uSign
              : k <= -2.5 ? uAlpha.z
              : k <= -1.5 ? uAlpha.y : uAlpha.x;

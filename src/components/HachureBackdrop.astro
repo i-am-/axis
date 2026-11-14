@@ -1,8 +1,10 @@
 ---
 // A pale hachured landscape behind the whole home page, kept clear around the
-// hero panel: a new random terrain on every load. Its longest river runs down
-// a side gutter beside the text, traced as a dotted line and lit in gold as
-// far as the visitor's gauge reading reaches; old map signs dot the gutters. Decorative only; without WebGL2 it is
+// hero panel: a new random terrain on every load, in the manner of a
+// seventeenth-century map. Beside the text, in the side gutters, stand towns,
+// villages, churches, mills, mines, wells and old battlefields joined by roads; the main road,
+// the one through the most places, is dotted and lit in gold as far as the
+// visitor's gauge reading reaches. Decorative only; without WebGL2 it is
 // simply absent. Terrain: lib/terrain.ts (in a worker); drawing: lib/hachure-gl.ts.
 ---
 <canvas class="hachure-backdrop" aria-hidden="true"></canvas>
@@ -42,7 +44,7 @@
       return {
         ink: hexRGB(css.getPropertyValue('--ink'), light ? [0.08, 0.09, 0.1] : [0.96, 0.95, 0.91]),
         gold: hexRGB(css.getPropertyValue('--gold-fill'), [0.72, 0.54, 0.17]),
-        hachure: 0.055, contour: light ? 0.025 : 0.03, index: light ? 0.045 : 0.05, sign: light ? 0.16 : 0.18,
+        hachure: 0.055, contour: light ? 0.025 : 0.03, index: light ? 0.045 : 0.05, sign: light ? 0.3 : 0.32,
         goldAlpha: 1,
       };
     };

@@ -11,8 +11,11 @@
 //               always into the longest tributary, to its source
 //   hachures    classic contour-row hachures: wedges set along each contour
 //               and run downslope towards the next, broader where it is steep
-//   symbols     a sprinkling of old map signs: churches, wells, mines and
-//               windmills, each where such a thing would stand
+//   signs       churches, windmills, mines and wells on the hilltops
+//   settlements villages and walled towns in the valleys near the river
+//   battles     crossed swords, a rare few on open ground
+//   roads       roads joining every sign; the longest chain, through the
+//               most places, is the main road, dotted and lit in gold
 //
 // Everything is in grid units (one cell = one height sample, the sample at
 // the cell's centre, as d3-contour places it). Pure; no DOM. renderer:
@@ -307,7 +310,7 @@ export function hachures(h: Float32Array, cols: number, rows: number, random: ()
 
 // ---- map signs
 
-export type Sign = 'church' | 'well' | 'mine' | 'windmill';
+export type Sign = 'church' | 'well' | 'mine' | 'windmill' | 'village' | 'town' | 'battle';
 type Seg = [number, number, number, number];
 
 const ring = (cx: number, cy: number, r: number, n = 10): Seg[] =>
@@ -315,6 +318,12 @@ const ring = (cx: number, cy: number, r: number, n = 10): Seg[] =>
     const a = (i / n) * 2 * Math.PI, b = ((i + 1) / n) * 2 * Math.PI;
     return [cx + r * Math.cos(a), cy + r * Math.sin(a), cx + r * Math.cos(b), cy + r * Math.sin(b)];
   });
+
+/** A gabled house standing on y = base, centred on cx. */
+const house = (cx: number, base: number, w = 0.13, h = 0.24): Seg[] => [
+  [cx - w, base, cx + w, base], [cx - w, base, cx - w, base - h], [cx + w, base, cx + w, base - h],
+  [cx - w - 0.04, base - h, cx, base - h - 0.17], [cx, base - h - 0.17, cx + w + 0.04, base - h],
+];
 
 /** The signs as strokes in a unit box about the origin, y down, the way a
  *  seventeenth-century map draws them: upright, small, in outline. */
@@ -329,98 +338,255 @@ export const GLYPHS: Record<Sign, Seg[]> = {
   windmill: [[-0.16, 0.6, -0.08, 0], [0.16, 0.6, 0.08, 0], [-0.24, 0.6, 0.24, 0.6],
     [0, 0, -0.45, -0.45], [0, 0, 0.45, -0.45], [0, 0, -0.45, 0.45], [0, 0, 0.45, 0.45],
     [-0.45, -0.45, -0.3, -0.6], [0.45, -0.45, 0.6, -0.3], [0.45, 0.45, 0.3, 0.6], [-0.45, 0.45, -0.6, 0.3]],
+  // a hamlet: a few houses about a small church
+  village: [...house(-0.32, 0.35), ...house(0.34, 0.4), [0, 0.35, 0, -0.35], [-0.12, -0.2, 0.12, -0.2], ...ring(0, 0.38, 0.1, 6)],
+  // a walled town: its ring of wall, houses within, a spire above
+  town: [...ring(0, 0.1, 0.62, 16), ...house(-0.28, 0.45, 0.11, 0.2), ...house(0.28, 0.45, 0.11, 0.2), ...house(0, 0.5, 0.1, 0.18),
+    [-0.08, 0.1, -0.08, -0.25], [0.08, 0.1, 0.08, -0.25], [-0.08, -0.25, 0, -0.85], [0, -0.85, 0.08, -0.25], [-0.1, -0.7, 0.1, -0.7]],
+  // a battlefield: crossed swords, their guards and hilts below
+  battle: [[-0.42, 0.42, 0.42, -0.42], [0.42, 0.42, -0.42, -0.42], [0.42, -0.42, 0.5, -0.5], [-0.42, -0.42, -0.5, -0.5],
+    [-0.42, 0.18, -0.18, 0.42], [0.18, 0.42, 0.42, 0.18], [-0.42, 0.42, -0.52, 0.52], [0.42, 0.42, 0.52, 0.52]],
 };
+/** Glyph scale per sign: towns stand larger. */
+const SIGN_SCALE: Record<Sign, number> = { church: 1, well: 1, mine: 1, windmill: 1, village: 1.25, town: 1.7, battle: 1.1 };
 
 const SIGN_SIZE = 1.3;       // cells (≈ 13 px) a glyph's unit
-const SIGN_GAP = 14;         // cells at least between signs
+const SIGN_GAP = 22;         // cells at least between signs
 const SIGN_CLEAR = 1.1;      // cells of hachures cleared round a sign
-const SIGNS_PER_CELL = 1 / 1100;
+const TOP_RADIUS = 3;        // cells: a top is the highest point this far round
 
-/** Where the signs stand: windmills on the heights, wells in the low ground,
- *  mines on steep slopes, churches between. Only where `free` allows. */
+/** Where the signs stand: on the tops, the local heights of the land, as an
+ *  old map sets its churches and mills on the hills. Only where `free` allows. */
 export function signs(h: Float32Array, cols: number, rows: number, random: () => number, free: (x: number, y: number) => boolean) {
-  const at = sampler(h, cols, rows);
+  const tops: number[] = [];
+  for (let y = TOP_RADIUS; y < rows - TOP_RADIUS; y++) {
+    for (let x = TOP_RADIUS; x < cols - TOP_RADIUS; x++) {
+      const c = y * cols + x;
+      let top = true;
+      for (let dy = -TOP_RADIUS; top && dy <= TOP_RADIUS; dy++)
+        for (let dx = -TOP_RADIUS; dx <= TOP_RADIUS; dx++)
+          if (h[c + dy * cols + dx] > h[c]) { top = false; break; }
+      if (top && free(x + 0.5, y + 0.5)) tops.push(c);
+    }
+  }
+  for (let i = tops.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [tops[i], tops[j]] = [tops[j], tops[i]];
+  }
   const out: { x: number; y: number; sign: Sign }[] = [];
-  const want = Math.round(cols * rows * SIGNS_PER_CELL);
-  for (let tries = 0; tries < want * 40 && out.length < want; tries++) {
-    const x = 2 + random() * (cols - 4), y = 2 + random() * (rows - 4);
-    if (!free(x, y) || out.some((s) => Math.hypot(s.x - x, s.y - y) < SIGN_GAP)) continue;
-    const z = at(x, y), slope = Math.hypot(at(x + 0.5, y) - at(x - 0.5, y), at(x, y + 0.5) - at(x, y - 0.5));
+  for (const c of tops) {
+    const x = (c % cols) + 0.5, y = Math.floor(c / cols) + 0.5;
+    if (out.some((s) => Math.hypot(s.x - x, s.y - y) < SIGN_GAP)) continue;
     const r = random();
-    const sign: Sign = slope > 0.6 * SLOPE_REF ? (r < 0.7 ? 'mine' : 'church')
-      : z > 0.62 ? (r < 0.65 ? 'windmill' : 'church')
-      : z < 0.35 ? (r < 0.65 ? 'well' : 'church')
-      : (r < 0.5 ? 'church' : r < 0.75 ? 'windmill' : 'well');
+    const sign: Sign = r < 0.38 ? 'windmill' : r < 0.72 ? 'church' : r < 0.88 ? 'mine' : 'well';
     out.push({ x, y, sign });
   }
   return out;
+}
+
+const ROAD_REACH = 60;       // cells: the longest single stretch of road
+const SETTLE_GAP = 16;       // cells at least between a settlement and any other sign
+const SETTLE_PER_CELL = 1 / 1400;
+
+/** Villages and towns: on gentle ground in the valleys, near the river, as
+ *  settlements grow; about one in three a town. */
+export function settlements(h: Float32Array, cols: number, rows: number, random: () => number,
+  free: (x: number, y: number) => boolean, river: [number, number][], taken: { x: number; y: number }[], area: number) {
+  const at = sampler(h, cols, rows);
+  const want = Math.max(1, Math.round(area * SETTLE_PER_CELL));
+  const out: { x: number; y: number; sign: Sign }[] = [];
+  const riverDist = (x: number, y: number) => river.reduce((d, [rx, ry]) => Math.min(d, Math.hypot(rx - x, ry - y)), Infinity);
+  for (let tries = 0; tries < want * 60 && out.length < want; tries++) {
+    const x = 2 + random() * (cols - 4), y = 2 + random() * (rows - 4);
+    if (!free(x, y)) continue;
+    if ([...taken, ...out].some((s) => Math.hypot(s.x - x, s.y - y) < SETTLE_GAP)) continue;
+    const slope = Math.hypot(at(x + 0.5, y) - at(x - 0.5, y), at(x, y + 0.5) - at(x, y - 0.5));
+    if (slope > 0.5 * SLOPE_REF) continue;
+    const d = riverDist(x, y);
+    if (river.length && (d < 3 || d > 4 + 8 * random())) continue;
+    out.push({ x, y, sign: random() < 0.33 ? 'town' : 'village' });
+  }
+  return out;
+}
+
+const BATTLE_PER_CELL = 1 / 5000;
+
+/** Battlefields: a rare few on open, gentle ground, away from the towns. */
+export function battles(h: Float32Array, cols: number, rows: number, random: () => number,
+  free: (x: number, y: number) => boolean, taken: { x: number; y: number }[], area: number) {
+  const at = sampler(h, cols, rows);
+  const want = Math.max(1, Math.round(area * BATTLE_PER_CELL));
+  const out: { x: number; y: number; sign: Sign }[] = [];
+  for (let tries = 0; tries < want * 80 && out.length < want; tries++) {
+    const x = 2 + random() * (cols - 4), y = 2 + random() * (rows - 4);
+    if (!free(x, y) || [...taken, ...out].some((s) => Math.hypot(s.x - x, s.y - y) < SETTLE_GAP)) continue;
+    const slope = Math.hypot(at(x + 0.5, y) - at(x - 0.5, y), at(x, y + 0.5) - at(x, y - 0.5));
+    if (slope < 0.35 * SLOPE_REF) out.push({ x, y, sign: 'battle' });
+  }
+  return out;
+}
+
+/** The roads: the shortest links that join every sign into one network (a
+ *  minimum spanning tree), each bowed a little and kept where `free` allows.
+ *  The main road is the network's longest chain, the one through the most
+ *  places, running from its upper end; the rest are byways. */
+export function roads(places: { x: number; y: number; sign: Sign }[], random: () => number, free: (x: number, y: number) => boolean) {
+  const n = places.length;
+  const route = (a: typeof places[0], b: typeof places[0]) => {
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+    const bow = (random() - 0.5) * 0.35 * len;
+    const mx = (a.x + b.x) / 2 - (dy / len) * bow, my = (a.y + b.y) / 2 + (dx / len) * bow;
+    const pts = chaikin([[a.x, a.y], [mx, my], [b.x, b.y]], 3);
+    return pts.every(([x, y]) => free(x, y)) ? pts : null;
+  };
+  const edges: { i: number; j: number; len: number; pts: [number, number][] }[] = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const len = Math.hypot(places[i].x - places[j].x, places[i].y - places[j].y);
+      if (len > ROAD_REACH) continue;
+      const pts = route(places[i], places[j]);
+      if (pts) edges.push({ i, j, len, pts });
+    }
+  }
+  edges.sort((a, b) => a.len - b.len);
+  const root = places.map((_, i) => i);
+  const find = (i: number): number => (root[i] === i ? i : (root[i] = find(root[i])));
+  const tree: typeof edges = [];
+  const links: { to: number; e: number }[][] = places.map(() => []);
+  for (const e of edges) {
+    const a = find(e.i), b = find(e.j);
+    if (a === b) continue;
+    root[a] = b;
+    links[e.i].push({ to: e.j, e: tree.length });
+    links[e.j].push({ to: e.i, e: tree.length });
+    tree.push(e);
+  }
+  // the longest chain by places passed, then by length: twice the farthest walk
+  const walk = (from: number) => {
+    const hops = new Array(n).fill(-1), dist = new Array(n).fill(0), via = new Array(n).fill(-1);
+    hops[from] = 0;
+    const queue = [from];
+    while (queue.length) {
+      const c = queue.shift()!;
+      for (const { to, e } of links[c]) {
+        if (hops[to] >= 0) continue;
+        hops[to] = hops[c] + 1; dist[to] = dist[c] + tree[e].len; via[to] = e;
+        queue.push(to);
+      }
+    }
+    let far = from;
+    for (let i = 0; i < n; i++) if (hops[i] > hops[far] || (hops[i] === hops[far] && dist[i] > dist[far])) far = i;
+    return { far, hops: hops[far], dist: dist[far], via };
+  };
+  let best = { a: -1, b: -1, hops: 0, dist: 0, via: [] as number[] };
+  const seen = new Set<number>();
+  for (let i = 0; i < n; i++) {
+    if (seen.has(find(i))) continue;
+    seen.add(find(i));
+    const a = walk(i).far, w = walk(a);
+    if (w.hops > best.hops || (w.hops === best.hops && w.dist > best.dist)) best = { a, b: w.far, hops: w.hops, dist: w.dist, via: w.via };
+  }
+  // the chain as one line, from its upper end
+  const onMain = new Set<number>();
+  let main: [number, number][] = [];
+  for (let c = best.b; c !== best.a && best.a >= 0;) {
+    const e = tree[best.via[c]];
+    onMain.add(best.via[c]);
+    const pts = e.i === c ? e.pts : [...e.pts].reverse();   // from c towards a
+    main.push(...(main.length ? pts.slice(1) : pts));
+    c = e.i === c ? e.j : e.i;
+  }
+  if (main.length && main[0][1] > main[main.length - 1][1]) main = main.reverse();
+  const byways: Seg[] = [];
+  tree.forEach((e, k) => {
+    if (onMain.has(k)) return;
+    for (let q = 0; q < e.pts.length - 1; q++) byways.push([e.pts[q][0], e.pts[q][1], e.pts[q + 1][0], e.pts[q + 1][1]]);
+  });
+  return { main, byways };
 }
 
 // ---- the whole backdrop, packed for the GPU
 
 /** Floats per stroke: x0, y0, x1, y1, weight, kind. */
 export const STRIDE = 6;
-/** kind: 2…3 a dot of the river's dotted line at 2 + its point (0 source … 1
- *  mouth) along the river; or one of these */
-export const KIND_HACHURE = -1, KIND_CONTOUR = -2, KIND_INDEX = -3, KIND_SIGN = -4, KIND_DOT = 2;
-const VALLEY = 0.5;          // height a gutter's sides stand above its middle
-const DOT_GAP = 0.9;         // cells between the river's dots
+/** kind: 2…3 a dot of the main road at 2 + its point along the road (0 at
+ *  its upper end … 1); or one of these */
+export const KIND_HACHURE = -1, KIND_CONTOUR = -2, KIND_INDEX = -3, KIND_SIGN = -4, KIND_ROAD = -5, KIND_DOT = 2;
+const VALLEY = 0.45;         // height the ridge behind the text stands above a gutter's floor
+const DOT_GAP = 0.9;         // cells between the main road's dots
 const LEVELS = 18;
 
 export interface BuildOptions { cols: number; rows: number; hole: Hole | null; band?: Band | null; seed: number }
-export interface Built { data: Float32Array; count: number; river: [number, number][] }
+export interface Built { data: Float32Array; count: number; river: [number, number][]; road: [number, number][] }
 
 export function buildTerrain({ cols, rows, hole, band = null, seed }: BuildOptions): Built {
   const random = rng(seed);
   const h = heightmap(cols, rows, random);
+  const hills = Float32Array.from(h);   // the landscape's own hills, before the gutter valleys
   // the gutters: beside the text column, outside the hole, off the frame
   const gutter = (x: number, y: number) =>
     !(band && x >= band.x0 && x <= band.x1) && !inHole(hole, x, y) && x >= 1 && x <= cols - 1 && y >= 1;
   const land = new Uint8Array(cols * rows);
   for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) land[y * cols + x] = gutter(x + 0.5, y + 0.5) ? 1 : 0;
-  // each gutter is a gentle valley, so the river wanders down its middle
-  // rather than along a wall; the landscape's own folds make it meander
-  const valley = Float32Array.from(h);
+  // each gutter is a valley in the land itself, under a ridge behind the
+  // text: the river follows the relief down the valley floor, meandering
+  // with the landscape's own folds, and the hachures draw the same relief
   if (band) {
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols;) {
-        if (!land[y * cols + x]) { x++; continue; }
-        let e = x;
-        while (e < cols && land[y * cols + e]) e++;
-        const mid = (x + e - 1) / 2, half = Math.max(1, (e - x) / 2);
-        for (let i = x; i < e; i++) valley[y * cols + i] += VALLEY * ((i - mid) / half) ** 2;
-        x = e;
-      }
+    // centred on each gutter where it is narrowest, beside the hero
+    const inL = hole ? Math.min(band.x0, hole.x0) : band.x0, inR = hole ? Math.max(band.x1, hole.x1) : band.x1;
+    const cL = (1 + inL) / 2, cR = (inR + cols - 1) / 2;
+    const wL = Math.max(2, (inL - 1) / 2), wR = Math.max(2, (cols - 1 - inR) / 2);
+    for (let x = 0; x < cols; x++) {
+      const u = Math.min(Math.abs(x + 0.5 - cL) / wL, Math.abs(x + 0.5 - cR) / wR);
+      const lift = VALLEY * (1 - Math.exp(-u * u));
+      for (let y = 0; y < rows; y++) h[y * cols + x] += lift;
     }
+    let lo = Infinity, hi = -Infinity;
+    for (const v of h) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    for (let i = 0; i < h.length; i++) h[i] = (h[i] - lo) / (hi - lo);
   }
-  const f = flood(valley, cols, rows, hole, band ? land : undefined);
+  const f = flood(h, cols, rows, hole, band ? land : undefined);
   const cells = thalweg(f, reach(f));
   const river = chaikin(cells.map((c) => [(c % cols) + 0.5, Math.floor(c / cols) + 0.5] as [number, number]));
-  const cum = [0];
-  for (let i = 1; i < river.length; i++) cum.push(cum[i - 1] + Math.hypot(river[i][0] - river[i - 1][0], river[i][1] - river[i - 1][1]));
-  const total = cum.at(-1) || 1;
 
   const rings = contourRings(h, cols, rows, LEVELS);
   const rows_: number[] = [];
   // map signs in the gutters, clear of the river
   const nearRiver = (x: number, y: number) => river.some(([rx, ry]) => Math.abs(rx - x) < 2.5 && Math.abs(ry - y) < 2.5);
-  const placed = signs(h, cols, rows, random, (x, y) => gutter(x - 1, y - 1) && gutter(x + 1, y + 1) && gutter(x - 1, y + 1) && gutter(x + 1, y - 1) && !nearRiver(x, y));
+  const roomy = (r: number) => (x: number, y: number) =>
+    gutter(x - r, y - r) && gutter(x + r, y + r) && gutter(x - r, y + r) && gutter(x + r, y - r) && !nearRiver(x, y);
+  const tops = signs(hills, cols, rows, random, roomy(1));
+  let area = 0;
+  for (const v of land) area += v;
+  const towns = settlements(h, cols, rows, random, roomy(1.6), river, tops, area);
+  const placed = [...tops, ...towns, ...battles(h, cols, rows, random, roomy(1.2), [...tops, ...towns], area)];
   for (const { x, y, sign } of placed) {
-    for (const [ax, ay, bx, by] of GLYPHS[sign]) rows_.push(x + ax * SIGN_SIZE, y + ay * SIGN_SIZE, x + bx * SIGN_SIZE, y + by * SIGN_SIZE, 0, KIND_SIGN);
+    const k = SIGN_SIZE * SIGN_SCALE[sign];
+    for (const [ax, ay, bx, by] of GLYPHS[sign]) rows_.push(x + ax * k, y + ay * k, x + bx * k, y + by * k, 0, KIND_SIGN);
   }
-  const underSign = (x: number, y: number) => placed.some((p) => Math.abs(p.x - x) < SIGN_CLEAR * SIGN_SIZE && Math.abs(p.y - y) < SIGN_CLEAR * SIGN_SIZE);
+  const { main, byways } = roads(placed, random, (x, y) => gutter(x, y));
+  // roads stop short of the signs they join
+  const atSign = (x: number, y: number) => placed.some((p) => Math.hypot(p.x - x, p.y - y) < 0.8 * SIGN_SIZE * SIGN_SCALE[p.sign]);
+  for (const [ax, ay, bx, by] of byways) if (!atSign(ax, ay) && !atSign(bx, by)) rows_.push(ax, ay, bx, by, 0, KIND_ROAD);
+  const underSign = (x: number, y: number) => placed.some((p) => {
+    const r = SIGN_CLEAR * SIGN_SIZE * SIGN_SCALE[p.sign];
+    return Math.abs(p.x - x) < r && Math.abs(p.y - y) < r;
+  });
   for (const s of hachures(h, cols, rows, random, hole, rings, LEVELS)) {
     if (underSign(s.x0, s.y0) || underSign(s.x1, s.y1)) continue;
     rows_.push(s.x0, s.y0, s.x1, s.y1, s.weight, KIND_HACHURE);
   }
-  // the river itself, dotted from source to mouth
-  for (let i = 0, next = 0; i < river.length - 1; i++) {
-    const [ax, ay] = river[i], [bx, by] = river[i + 1];
-    const len = cum[i + 1] - cum[i];
-    for (; next <= cum[i + 1]; next += DOT_GAP) {
-      const u = len ? (next - cum[i]) / len : 0;
+  // the main road, dotted from its upper end (0) to its lower (1)
+  const cum = [0];
+  for (let k = 1; k < main.length; k++) cum.push(cum[k - 1] + Math.hypot(main[k][0] - main[k - 1][0], main[k][1] - main[k - 1][1]));
+  const total = cum.at(-1) || 1;
+  for (let k = 0, next = 0; k < main.length - 1; k++) {
+    const [ax, ay] = main[k], [bx, by] = main[k + 1];
+    const len = cum[k + 1] - cum[k];
+    for (; next <= cum[k + 1]; next += DOT_GAP) {
+      const u = len ? (next - cum[k]) / len : 0;
       const x = ax + (bx - ax) * u, y = ay + (by - ay) * u;
-      if (!gutter(x, y)) continue;
+      if (!gutter(x, y) || atSign(x, y)) continue;
       rows_.push(x, y, x, y, 1, KIND_DOT + next / total);
     }
   }
@@ -434,5 +600,5 @@ export function buildTerrain({ cols, rows, hole, band = null, seed }: BuildOptio
       rows_.push(ax, ay, bx, by, 0, kind);
     }
   }
-  return { data: Float32Array.from(rows_), count: rows_.length / STRIDE, river };
+  return { data: Float32Array.from(rows_), count: rows_.length / STRIDE, river, road: main };
 }
