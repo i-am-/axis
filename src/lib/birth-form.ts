@@ -176,11 +176,11 @@ export function initBirthForm(form: HTMLFormElement, onSubmit: (b: Birth) => Pro
       return;
     }
     status.textContent = '';
-    history.replaceState(null, '', birthQuery(birth, placeName(chosen)));
+    history.replaceState(null, '', location.pathname + birthQuery(birth, placeName(chosen)));
   });
 
-  // a chart handed over in the query string draws at once
-  const handed = readBirthQuery(location.search);
+  // a chart handed over in the URL fragment (or an old ?query) draws at once
+  const handed = readBirthQuery(location.hash || location.search);
   if (handed) {
     date.value = handed.date;
     if (handed.time) { setUnknown(false); time.value = handed.time; } else setUnknown(true);

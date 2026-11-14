@@ -247,12 +247,18 @@ import BirthForm from '../components/BirthForm.astro';
       drawWheel(wheel, last);
       fillTable(document.getElementById('natal-rows')!, last);
       drawCards(last);
-      const { renderHellenistic } = await import('../lib/hellenistic-view');
-      renderHellenistic(document.getElementById('natal-hellenistic')!, last, b.date);
+      const hel = document.getElementById('natal-hellenistic')!;
+      try {
+        const { renderHellenistic } = await import('../lib/hellenistic-view');
+        renderHellenistic(hel, last, b.date, b.place.time_zone);
+      } catch (e) {
+        hel.replaceChildren();   // no stale reading from an earlier chart
+        console.error(e);
+      }
       const map = document.getElementById('natal-map-link') as HTMLAnchorElement;
       map.hidden = !b.time;
       map.href = `/astrocartography/${birthQuery(b, placeName(b.place))}`;
-      track('natal-chart', { place: placeName(b.place), date: b.date });
+      track('natal-chart', { place: placeName(b.place).slice(0, 80), date: b.date });
       result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
 

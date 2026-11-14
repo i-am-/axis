@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { wsHouse, isDayChart, sectRoles, inSect, lots, profection, condition, pointsFrom } from './hellenistic';
 import { releaseL1, releaseL2, peakOf } from './hellenistic';
+import { formatDate } from './hellenistic-view';
 
 describe('houses and sect', () => {
   it('whole-sign house counts signs from the ASC sign', () => {
@@ -45,8 +46,11 @@ describe('profection', () => {
     expect(profection('1990-06-15', '2026-06-15', 0))
       .toEqual({ age: 36, house: 1, sign: 0, lord: 'Mars', next: '2027-06-15' });
   });
+  it('is null before the birth date', () => {
+    expect(profection('2027-06-15', '2026-11-14', 0)).toBeNull();
+  });
   it('a 29 February birthday rolls to 1 March', () => {
-    expect(profection('2000-02-29', '2026-01-10', 0).next).toBe('2026-03-01');
+    expect(profection('2000-02-29', '2026-01-10', 0)!.next).toBe('2026-03-01');
   });
 });
 
@@ -101,8 +105,21 @@ describe('zodiacal releasing', () => {
     expect(l2[3].peak).toBe('tenth');
     expect(l2.at(-1)!.end).toBe(l1[0].end);   // cut at the end of L1
   });
+  it('a Leo L1 (19 years) looses the bond at sub-period 12', () => {
+    const l2 = releaseL2(releaseL1(4, birth, 3)[0], 3);
+    expect(l2.findIndex((p) => p.lb)).toBe(12);
+    expect(l2[12].sign).toBe(10);
+  });
   it('a short L1 never looses the bond', () => {
     const libra = releaseL1(6, birth, 3)[0];
     expect(releaseL2(libra, 3).some((p) => p.lb)).toBe(false);
+  });
+});
+
+describe('formatDate', () => {
+  const t = Date.parse('2000-01-01T20:00:00Z');
+  it('uses the given time zone', () => {
+    expect(formatDate(t, 'Australia/Sydney')).toBe('2 Jan 2000');
+    expect(formatDate(t, 'UTC')).toBe('1 Jan 2000');
   });
 });

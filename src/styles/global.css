@@ -1275,13 +1275,12 @@ html.js [data-reveal] { opacity: 1; transform: none; }
 .acg-IC { stroke-dasharray: 1.5 4; stroke-linecap: round; }
 .acg-ASC { stroke-dasharray: 8 5; }
 .acg-DSC { stroke-dasharray: 10 4 2 4; }
-.acg-label { font: calc(11px / var(--k, 1)) var(--ui); text-anchor: middle; paint-order: stroke; stroke: var(--plate); stroke-width: calc(3px / var(--k, 1)); }
+.acg-label { pointer-events: none; font: calc(11px / var(--k, 1)) var(--ui); text-anchor: middle; paint-order: stroke; stroke: var(--plate); stroke-width: calc(3px / var(--k, 1)); }
 .acg-birth { fill: var(--gold); stroke: var(--plate); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .acg-pick { fill: none; stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .acg-legend { font-family: var(--ui); font-size: .82rem; color: var(--ink-faint); margin: .6rem 0 0; }
-.acg-key { display: inline-block; width: 1.8rem; height: 0; border-top: 2px solid var(--ink-soft); vertical-align: middle; margin: 0 .3rem 0 .8rem; }
-.acg-key.acg-IC { border-top-style: dotted; }
-.acg-key.acg-ASC, .acg-key.acg-DSC { border-top-style: dashed; }
+.acg-key { display: inline-block; width: 1.8rem; height: 4px; vertical-align: middle; margin: 0 .3rem 0 .8rem; }
+.acg-key line { stroke: var(--ink-soft); stroke-width: 2; }
 .acg-city { margin-top: 2rem; max-width: 46rem; font-family: var(--ui); }
 .acg-city label { display: block; margin-bottom: .35rem; font-size: .86rem; color: var(--ink-soft); }
 .acg-near h3 { font-family: var(--serif); font-weight: 400; font-size: 1.2rem; margin: 1.2rem 0 .4rem; }

@@ -27,10 +27,10 @@ import BirthForm from '../components/BirthForm.astro';
         <div class="acg-chips" id="acg-angles" role="group" aria-label="Lines shown"></div>
         <div class="acg-map" id="acg-map" aria-hidden="true"></div>
         <p class="acg-legend" aria-hidden="true">
-          <span class="acg-key acg-MC"></span> Midheaven
-          <span class="acg-key acg-IC"></span> Imum Coeli
-          <span class="acg-key acg-ASC"></span> Ascendant
-          <span class="acg-key acg-DSC"></span> Descendant
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-MC" x1="0" y1="2" x2="29" y2="2" /></svg> Midheaven
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-IC" x1="0" y1="2" x2="29" y2="2" /></svg> Imum Coeli
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-ASC" x1="0" y1="2" x2="29" y2="2" /></svg> Ascendant
+          <svg class="acg-key" viewBox="0 0 29 4" width="29" height="4" aria-hidden="true"><line class="acg-DSC" x1="0" y1="2" x2="29" y2="2" /></svg> Descendant
           · Drag to move, scroll or pinch to zoom, click a place to read it.
         </p>
 
@@ -79,7 +79,7 @@ import BirthForm from '../components/BirthForm.astro';
   import { feature } from 'topojson-client';
   import type { Topology, GeometryCollection } from 'topojson-specification';
   import worldURL from 'world-atlas/countries-110m.json?url';
-  import { linesFor, linesNear, horizonLon, ANGLES, type Line, type Angle, type LonLat } from '../lib/acg';
+  import { linesFor, linesNear, ORB_KM, horizonLon, ANGLES, type Line, type Angle, type LonLat } from '../lib/acg';
   import { ACG_BODIES, ANGLE_LABEL, MEANING } from '../data/acg-lines';
   import { initBirthForm, initPlace, placeName, coords, track } from '../lib/birth-form';
   import { birthQuery } from '../lib/birth-query';
@@ -104,7 +104,8 @@ import BirthForm from '../components/BirthForm.astro';
   let world: Promise<string> | undefined;
   function countries() {
     world ??= fetch(worldURL).then((r) => r.json()).then((topo: Topology) =>
-      path(feature(topo, topo.objects.countries as GeometryCollection)) ?? '');
+      path(feature(topo, topo.objects.countries as GeometryCollection)) ?? '')
+      .catch((e) => { world = undefined; throw e; });
     return world;
   }
 
@@ -166,14 +167,12 @@ import BirthForm from '../components/BirthForm.astro';
     host.replaceChildren(svg);
     applyVisibility(svg);
 
-    let k = 1;
     const z = zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
       .translateExtent([[0, 0], [W, H]])
       .on('zoom', (e: D3ZoomEvent<SVGSVGElement, unknown>) => {
-        k = e.transform.k;
         g.setAttribute('transform', e.transform.toString());
-        g.style.setProperty('--k', String(k));
+        g.style.setProperty('--k', String(e.transform.k));
       });
     const sel = select(svg as SVGSVGElement).call(z);
     sel.on('click', (e: MouseEvent) => {
@@ -201,7 +200,7 @@ import BirthForm from '../components/BirthForm.astro';
     h.textContent = label;
     if (!near.length) {
       const none = document.createElement('p');
-      none.textContent = 'No line passes within 700 km of here: the place is quiet in your map, neither pulling nor pushing.';
+      none.textContent = `No line passes within ${ORB_KM} km of here: the place is quiet in your map, neither pulling nor pushing.`;
       host.replaceChildren(h, none);
       return;
     }
@@ -273,7 +272,7 @@ import BirthForm from '../components/BirthForm.astro';
       mark = await drawMap(mapHost, birthAt, (p) =>
         point(p, `${Math.abs(p[1]).toFixed(1)}° ${p[1] >= 0 ? 'N' : 'S'}, ${lonText(p[0])}`));
       point(birthAt, `${placeName(b.place)}, where you were born`);
-      track('astrocartography', { place: placeName(b.place), date: b.date });
+      track('astrocartography', { place: placeName(b.place).slice(0, 80), date: b.date });
       result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
   }

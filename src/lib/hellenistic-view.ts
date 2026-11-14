@@ -25,7 +25,9 @@ const position = (lon: number) => {
   return `${deg}°${String(min).padStart(2, '0')}′ ${SIGNS[signIndex(lon)]}`;
 };
 const ordinal = (n: number) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
-const dateText = (ms: number) => new Date(ms).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
+/** A calendar date as read in the given time zone (the birthplace's for ZR periods). */
+export const formatDate = (ms: number, timeZone: string) =>
+  new Date(ms).toLocaleDateString('en-GB', { timeZone, day: 'numeric', month: 'short', year: 'numeric' });
 const localISO = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -39,7 +41,7 @@ function table(head: string[], rows: string[][], caption: string) {
   const t = el('table', 'natal-table hel-table');
   t.append(el('caption', 'sr-only', caption));
   const thead = el('thead'), tr = el('tr');
-  head.forEach((h) => { const th = el('th', '', h); th.scope = 'col'; tr.append(th); });
+  head.forEach((h) => { const th = el('th', h === 'Notes' ? 'sr-only' : '', h); th.scope = 'col'; tr.append(th); });
   thead.append(tr);
   const tbody = el('tbody');
   for (const r of rows) {
@@ -54,7 +56,8 @@ function table(head: string[], rows: string[][], caption: string) {
   return t;
 }
 
-function zrBlock(birthUTC: number, spiritSign: number, fortuneSign: number, now: number) {
+function zrBlock(birthUTC: number, spiritSign: number, fortuneSign: number, now: number, tz: string) {
+  const dateText = (ms: number) => formatDate(ms, tz);
   const wrap = el('div', 'zr');
   const intro = el('p', 'hel-note', M.ZR.intro);
   const toggle = el('div', 'zr-toggle');
@@ -74,7 +77,7 @@ function zrBlock(birthUTC: number, spiritSign: number, fortuneSign: number, now:
       band.append(seg);
     }
     const marker = el('div', 'zr-now');
-    marker.style.left = `${Math.min(100, ((now - birthUTC) / span) * 100)}%`;
+    marker.style.left = `${Math.max(0, Math.min(100, ((now - birthUTC) / span) * 100))}%`;
     band.append(marker);
 
     const current = l1.find((p) => p.start <= now && now < p.end);
@@ -89,7 +92,7 @@ function zrBlock(birthUTC: number, spiritSign: number, fortuneSign: number, now:
         [p.peak === 'tenth' ? 'strongest peak' : p.peak ? 'peak' : '', p.lb ? 'loosing of the bond' : '',
           p.start <= now && now < p.end ? 'now' : ''].filter(Boolean).join(', '),
       ];
-      details.append(table(['Sign', 'Dates', ''], releaseL2(current, fortuneSign).map(row), 'Level 2 periods'));
+      details.append(table(['Sign', 'Dates', 'Notes'], releaseL2(current, fortuneSign).map(row), 'Level 2 periods'));
       if (releaseL2(current, fortuneSign).some((p) => p.lb)) details.append(el('p', 'hel-note', M.ZR.lb));
       parts.push(details);
     }
@@ -107,7 +110,7 @@ function zrBlock(birthUTC: number, spiritSign: number, fortuneSign: number, now:
   return wrap;
 }
 
-export function renderHellenistic(root: HTMLElement, data: Positions, birthDate: string, today = new Date()) {
+export function renderHellenistic(root: HTMLElement, data: Positions, birthDate: string, timeZone: string, today = new Date()) {
   const pts = pointsFrom(data);
   const blocks: Node[] = [el('p', 'natal-spread-intro', M.INTRO)];
   const cond = condition(pts);
@@ -154,17 +157,20 @@ export function renderHellenistic(root: HTMLElement, data: Positions, birthDate:
   ));
 
   const pr = profection(birthDate, localISO(today), signIndex(asc));
-  const lordAt = cond.find((c) => c.planet === pr.lord)!;
-  blocks.push(block('This year’s profection',
-    el('p', '', `Age ${pr.age}: a ${ordinal(pr.house)}-house year in ${SIGNS[pr.sign]}. ` +
-      `Lord of the year: ${pr.lord}, natally in ${SIGNS[signIndex(lordAt.lon)]}, ${ordinal(lordAt.house!)} house, ${lordAt.dignity}.`),
-    el('p', 'hel-note', M.HOUSE[pr.house - 1]),
-    el('p', 'hel-note', M.LORD[pr.lord]),
-    el('p', 'hel-note', `The next profection year starts on ${dateText(Date.parse(`${pr.next}T00:00:00Z`))}.`),
-  ));
+  if (pr) {
+    const lordAt = cond.find((c) => c.planet === pr.lord)!;
+    blocks.push(block('This year’s profection',
+      el('p', '', `Age ${pr.age}: a ${ordinal(pr.house)}-house year in ${SIGNS[pr.sign]}. ` +
+        `Lord of the year: ${pr.lord}, natally in ${SIGNS[signIndex(lordAt.lon)]}, ${ordinal(lordAt.house!)} house, ${lordAt.dignity}.`),
+      el('p', 'hel-note', M.HOUSE[pr.house - 1]),
+      el('p', 'hel-note', M.LORD[pr.lord]),
+      // a bare calendar date, so it stays in UTC
+      el('p', 'hel-note', `The next profection year starts on ${formatDate(Date.parse(`${pr.next}T00:00:00Z`), 'UTC')}.`),
+    ));
+  }
 
   blocks.push(block('Zodiacal releasing',
-    zrBlock(Date.parse(data.input.utc), signIndex(l.spirit), signIndex(l.fortune), today.getTime())));
+    zrBlock(Date.parse(data.input.utc), signIndex(l.spirit), signIndex(l.fortune), today.getTime(), timeZone)));
 
   root.replaceChildren(...blocks);
 }

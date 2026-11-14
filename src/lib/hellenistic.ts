@@ -70,11 +70,12 @@ export function lots(asc: number, sun: number, moon: number, day: boolean): Lots
 
 export interface Profection { age: number; house: number; sign: number; lord: Planet7; next: string }
 
-/** The annual profection on a date: one whole sign per year of life, from the ASC sign. */
-export function profection(birth: string, today: string, ascSign: number): Profection {
+/** The annual profection on a date: one whole sign per year of life, from the ASC sign; null before the birth date. */
+export function profection(birth: string, today: string, ascSign: number): Profection | null {
   const [by, bm, bd] = birth.split('-').map(Number);
   const [ty, tm, td] = today.split('-').map(Number);
   const age = ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
+  if (age < 0) return null;   // born after `today`: no profection yet
   const sign = (ascSign + age) % 12;
   const next = new Date(Date.UTC(by + age + 1, bm - 1, bd)).toISOString().slice(0, 10);
   return { age, house: (age % 12) + 1, sign, lord: RULER[sign], next };
@@ -109,7 +110,9 @@ export function releaseL1(lotSign: number, birthUTC: number, fortuneSign: number
   return out;
 }
 
-/** Level 2 inside one L1 period, with the loosing of the bond after twelve signs. */
+/** Level 2 inside one L1 period. After twelve sub-periods (211 months) the bond is loosed: the
+ *  sequence jumps to the sign opposite the L1 sign. That happens in any L1 longer than 211 months:
+ *  Gemini, Cancer, Leo, Virgo, Capricorn and Aquarius. */
 export function releaseL2(l1: ZRPeriod, fortuneSign: number): ZRPeriod[] {
   const out: ZRPeriod[] = [];
   let s = l1.sign;
