@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import BirthForm from '../components/BirthForm.astro';
 ---
 <Base
   title="Natal chart"
@@ -15,36 +16,7 @@ import Base from '../layouts/Base.astro';
         </p>
       </header>
 
-      <form class="natal-form" id="natal-form" novalidate>
-        <div class="natal-fields">
-          <div>
-            <label for="birth-date">Date of birth</label>
-            <input type="date" id="birth-date" required min="1000-01-01" max="2999-12-31" />
-          </div>
-          <div>
-            <label for="birth-time">Time of birth, local</label>
-            <input type="time" id="birth-time" required step="60" value="12:00" />
-            <label class="check-label">
-              <input type="checkbox" id="time-unknown" /> I don’t know the time
-            </label>
-          </div>
-          <div class="place-field">
-            <label for="birth-place" id="birth-place-label">Place of birth</label>
-            <input
-              type="text" id="birth-place" required autocomplete="off" spellcheck="false"
-              role="combobox" aria-autocomplete="list" aria-expanded="false"
-              aria-controls="place-list" aria-describedby="place-hint"
-              placeholder="Start typing a town or city"
-            />
-            <ul id="place-list" role="listbox" aria-labelledby="birth-place-label" hidden></ul>
-            <p id="place-hint" class="field-hint">Any language: Dublin, Baile Átha Cliath, Дублин.</p>
-          </div>
-        </div>
-        <div class="natal-actions">
-          <button class="btn btn-primary" type="submit">Draw my chart</button>
-          <p class="natal-status" id="natal-status" role="status" aria-live="polite"></p>
-        </div>
-      </form>
+      <BirthForm id="natal-form" submitLabel="Draw my chart" />
 
       <section class="natal-result" id="natal-result" hidden aria-labelledby="natal-result-title">
         <h2 id="natal-result-title" class="natal-result-title"></h2>
@@ -87,15 +59,8 @@ import Base from '../layouts/Base.astro';
 
 <script>
   import { Chart, AspectCalculator } from '@astrodraw/astrochart';
-  import { searchPlaces, type Place } from '../lib/places';
+  import { initBirthForm, placeName, coords, track } from '../lib/birth-form';
   import type { Positions } from '../lib/ephemeris';
-
-  // Liwan's tracker, when analytics are on (components/Liwan.astro)
-  declare global {
-    interface Window {
-      liwan?: { event?: (name: string, options?: { properties?: Record<string, string> }) => Promise<void> };
-    }
-  }
 
   // the ephemeris's bodies, as AstroChart names and draws them
   const BODIES: [api: string, chart: string, label: string][] = [
@@ -105,125 +70,6 @@ import Base from '../layouts/Base.astro';
     ['pluto', 'Pluto', 'Pluto'], ['true_node', 'NNode', 'North Node'], ['mean_lilith', 'Lilith', 'Lilith'],
     ['chiron', 'Chiron', 'Chiron'],
   ];
-
-  // "Moscow, Russia", not "Moscow, Moscow, Russia"
-  // flags as SVG files: Windows draws flag emoji as bare letters
-  const FLAGS = import.meta.glob<string>('../../node_modules/flag-icons/flags/4x3/*.svg',
-    { query: '?url', import: 'default', eager: true });
-  const flagURL = (cc: string) => FLAGS[`../../node_modules/flag-icons/flags/4x3/${cc.toLowerCase()}.svg`];
-
-  // 59.94° N, 30.31° E
-  const coords = (p: Place) =>
-    `${Math.abs(p.latitude).toFixed(2)}° ${p.latitude >= 0 ? 'N' : 'S'}, ` +
-    `${Math.abs(p.longitude).toFixed(2)}° ${p.longitude >= 0 ? 'E' : 'W'}`;
-
-  const placeName = (p: Place) =>
-    [p.name, p.region !== p.name ? p.region : '', p.country].filter(Boolean).join(', ');
-
-  // ---- the place search: a combobox that narrows as the visitor types
-
-  function initPlace(input: HTMLInputElement, list: HTMLUListElement, onPick: (p: Place | null) => void) {
-    let places: Place[] = [];
-    let active = -1;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let latest = '';                        // answers to older queries arriving late are dropped
-
-    const close = () => {
-      list.hidden = true;
-      input.setAttribute('aria-expanded', 'false');
-      input.removeAttribute('aria-activedescendant');
-      active = -1;
-    };
-
-    const highlight = (i: number) => {
-      active = i;
-      list.querySelectorAll('li').forEach((li, j) => li.setAttribute('aria-selected', String(j === i)));
-      if (i >= 0) {
-        input.setAttribute('aria-activedescendant', `place-opt-${i}`);
-        list.children[i]?.scrollIntoView({ block: 'nearest' });
-      } else input.removeAttribute('aria-activedescendant');
-    };
-
-    const pick = (i: number) => {
-      const p = places[i];
-      if (!p) return;
-      input.value = placeName(p);
-      onPick(p);
-      close();
-    };
-
-    const render = () => {
-      list.replaceChildren(...places.map((p, i) => {
-        const li = document.createElement('li');
-        li.id = `place-opt-${i}`;
-        li.setAttribute('role', 'option');
-        li.setAttribute('aria-selected', 'false');
-        const flag = document.createElement('img');
-        flag.className = 'place-flag';
-        flag.alt = '';                      // the country is named in the text beside it
-        flag.width = 24;
-        flag.height = 18;
-        const url = flagURL(p.country_code);
-        if (url) flag.src = url;
-        else flag.style.visibility = 'hidden';
-        const name = document.createElement('span');
-        name.className = 'place-name';
-        name.textContent = p.name;
-        const where = document.createElement('span');
-        where.className = 'place-where';
-        where.textContent = [p.matched_name !== p.name ? p.matched_name : '', p.region !== p.name ? p.region : '', p.country]
-          .filter(Boolean).join(' · ');
-        const at = document.createElement('span');
-        at.className = 'place-coords';
-        at.textContent = coords(p);
-        li.append(flag, name, at, where);
-        li.addEventListener('mousedown', (e) => { e.preventDefault(); pick(i); });
-        return li;
-      }));
-      if (!places.length) {
-        const li = document.createElement('li');
-        li.className = 'place-empty';
-        li.textContent = 'No town or city by that name. Try its spelling in another language.';
-        list.replaceChildren(li);
-      }
-      list.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-      highlight(-1);
-    };
-
-    const search = async (q: string) => {
-      latest = q;
-      try {
-        const found = await searchPlaces(q, 8);
-        if (q !== latest) return;
-        places = found;
-        render();
-      } catch {
-        if (q === latest) close();
-      }
-    };
-
-    input.addEventListener('input', () => {
-      onPick(null);                         // typing again undoes the last choice
-      clearTimeout(timer);
-      const q = input.value.trim();
-      if ([...q].length < (/[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Hangul}]/u.test(q) ? 1 : 2)) {
-        latest = '';
-        close();
-        return;
-      }
-      timer = setTimeout(() => search(q), 120);
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (list.hidden) return;
-      if (e.key === 'ArrowDown') { e.preventDefault(); highlight(Math.min(active + 1, places.length - 1)); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(Math.max(active - 1, 0)); }
-      else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); pick(active); }
-      else if (e.key === 'Escape') close();
-    });
-    input.addEventListener('blur', close);
-  }
 
   // ---- the chart
 
@@ -357,66 +203,36 @@ import Base from '../layouts/Base.astro';
   function initNatal() {
     const form = document.getElementById('natal-form') as HTMLFormElement | null;
     if (!form) return;
-    const date = document.getElementById('birth-date') as HTMLInputElement;
-    const time = document.getElementById('birth-time') as HTMLInputElement;
-    const unknown = document.getElementById('time-unknown') as HTMLInputElement;
-    const place = document.getElementById('birth-place') as HTMLInputElement;
-    const list = document.getElementById('place-list') as HTMLUListElement;
-    const status = document.getElementById('natal-status')!;
     const result = document.getElementById('natal-result')!;
     const wheel = document.getElementById('natal-wheel')!;
-    let chosen: Place | null = null;
     let last: Positions | null = null;
 
-    initPlace(place, list, (p) => { chosen = p; });
-
-    // an unknown time is calculated for noon: the middle of the day keeps the
-    // Moon, the fastest mover, within about 7° of where it really was
-    unknown.addEventListener('change', () => {
-      time.disabled = unknown.checked;
-      if (unknown.checked) time.value = '12:00';
-    });
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!date.value) { status.textContent = 'Enter your date of birth.'; date.focus(); return; }
-      if (!time.value && !unknown.checked) { status.textContent = 'Enter your time of birth, or tick that you don’t know it.'; time.focus(); return; }
-      if (!chosen) { status.textContent = 'Choose your place of birth from the list.'; place.focus(); return; }
-      status.textContent = 'Calculating…';
-      try {
-        const { computeChart } = await import('../lib/ephemeris');
-        last = await computeChart({
-          datetime: `${date.value}T${unknown.checked ? '12:00' : time.value}`, tz: chosen.time_zone,
-          lat: chosen.latitude, lon: chosen.longitude,
-          bodies: BODIES.map(([api]) => api), houses: unknown.checked ? 'none' : 'placidus',
-        });
-      } catch (err) {
-        status.textContent = (err as Error).message.replace(/^./, (c) => c.toUpperCase());
-        return;
-      }
-      status.textContent = '';
-      const born = new Date(`${date.value}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    initBirthForm(form, async (b) => {
+      const { computeChart } = await import('../lib/ephemeris');
+      last = await computeChart({
+        datetime: `${b.date}T${b.time ?? '12:00'}`, tz: b.place.time_zone,
+        lat: b.place.latitude, lon: b.place.longitude,
+        bodies: BODIES.map(([api]) => api), houses: b.time ? 'placidus' : 'none',
+      });
+      const born = new Date(`${b.date}T00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
       const h = last.houses;
-      document.getElementById('natal-result-title')!.textContent =
-        `Born ${born}, ${unknown.checked ? 'time unknown' : time.value}`;
+      document.getElementById('natal-result-title')!.textContent = `Born ${born}, ${b.time ?? 'time unknown'}`;
       const utc = new Date(last.input.utc);
       const utcDate = utc.toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
       const utcTime = utc.toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' });
       document.getElementById('natal-result-utc')!.textContent =
         `In UTC: ${utcDate}, ${utcTime}. ` +
-        (unknown.checked ? `That is noon local time, which was UTC${last.input.utc_offset}.`
-                         : `Local time was UTC${last.input.utc_offset}.`);
+        (b.time ? `Local time was UTC${last.input.utc_offset}.`
+                : `That is noon local time, which was UTC${last.input.utc_offset}.`);
       document.getElementById('natal-result-meta')!.textContent =
-        `${placeName(chosen)} · ${coords(chosen)} · ` +
+        `${placeName(b.place)} · ${coords(b.place)} · ` +
         (h ? `${h.system} houses${h.note ? ` (${h.note})` : ''}`
            : 'Drawn for noon. Houses and the Ascendant need a birth time, and the Moon may be up to 7° either way.');
       result.hidden = false;
       drawWheel(wheel, last);
       fillTable(document.getElementById('natal-rows')!, last);
       drawCards(last);
-      // one analytics event per chart: the birth date and the birth place's
-      // name, never its coordinates
-      window.liwan?.event?.('natal-chart', { properties: { place: placeName(chosen), date: date.value } }).catch(() => {});
+      track('natal-chart', { place: placeName(b.place), date: b.date });
       result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
 
