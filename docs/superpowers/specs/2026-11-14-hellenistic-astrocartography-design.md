@@ -35,6 +35,7 @@ Pure calculation modules on top of the existing engine. Pages only render.
 | `src/lib/ephemeris.ts` | extend | add geocentric equatorial RA/Dec per body, GMST and ARMC, Julian-day helpers |
 | `src/lib/hellenistic.ts` | new, pure | whole-sign houses, sect, dignity and bounds, lots, profection, zodiacal releasing |
 | `src/lib/acg.ts` | new, pure | MC/IC meridians, ASC/DSC curves, point-to-line distance |
+| `src/lib/birth-query.ts` | new, pure | encode and decode the hand-off query string |
 | `src/data/dignities.ts` | new | rulers, exaltations, detriments, falls, Egyptian bounds, sign minor years |
 | `src/data/hellenistic.ts` | new | meanings for the Hellenistic blocks |
 | `src/data/acg-lines.ts` | new | 40 line meanings (10 planets × 4 angles) |
@@ -42,8 +43,7 @@ Pure calculation modules on top of the existing engine. Pages only render.
 | `src/pages/natal-chart.astro` | extend | WS house column, Hellenistic section, link to the map |
 | `src/pages/astrocartography.astro` | new | the map page |
 | `src/pages/resources.astro` | extend | a card for the map |
-| `public/geo/countries-110m.json` | new | world-atlas TopoJSON, Natural Earth, public domain |
-| `netlify.toml` | extend | cache header for `/geo/*` |
+| `world-atlas/countries-110m.json` | dependency | imported with `?url`; Vite hashes it into `/_astro/`, already cached as immutable |
 
 New dependencies: `d3-geo`, `d3-zoom`, `d3-selection`, `topojson-client`;
 `vitest` as a dev dependency with an `npm test` script.
@@ -147,8 +147,8 @@ then its meaning.
 ### Accessibility
 
 The map SVG is `aria-hidden`. A table "Your lines" gives each planet's MC
-and IC longitude and the latitudes where its ASC and DSC lines cross the
-map. The city panel is plain text with `aria-live`.
+and IC longitude and its ASC and DSC longitude at the birth latitude.
+The city panel is plain text with `aria-live`.
 
 ### Credits
 
