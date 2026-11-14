@@ -1,7 +1,8 @@
 ---
-// A pale hachured landscape around the home page's hero panel: a new random
-// terrain on every load, its main river picked out in gold as far as the
-// visitor's gauge reading reaches. Decorative only; without WebGL2 it is
+// A pale hachured landscape behind the whole home page, kept clear around the
+// hero panel: a new random terrain on every load. Its longest river runs down
+// a side gutter beside the text, traced as a dotted line and lit in gold as
+// far as the visitor's gauge reading reaches; old map signs dot the gutters. Decorative only; without WebGL2 it is
 // simply absent. Terrain: lib/terrain.ts (in a worker); drawing: lib/hachure-gl.ts.
 ---
 <canvas class="hachure-backdrop" aria-hidden="true"></canvas>
@@ -10,8 +11,10 @@
   import { createRenderer, hexRGB, type Look, type Frame } from '../lib/hachure-gl';
   import type { Built } from '../lib/terrain';
 
-  const CELL = 8;         // CSS px per terrain cell
+  const CELL = 10;        // CSS px per terrain cell
+  const SPARE = 40;       // extra rows, so a page that grows a little keeps its terrain
   const BUFFER = 48;      // clear space around the hero panel
+  const TEXT_AIR = 16;    // px the river keeps from the text column
   const SOFT = 32;        // the map fades in over this beyond the buffer
   const REVEAL_MS = 1300; // in step with the torch-bearer drawing himself
 
@@ -39,34 +42,47 @@
       return {
         ink: hexRGB(css.getPropertyValue('--ink'), light ? [0.08, 0.09, 0.1] : [0.96, 0.95, 0.91]),
         gold: hexRGB(css.getPropertyValue('--gold-fill'), [0.72, 0.54, 0.17]),
-        hachure: light ? 0.055 : 0.055, contour: light ? 0.025 : 0.03, index: light ? 0.045 : 0.05,
-        goldAlpha: light ? 0.3 : 0.35,
+        hachure: 0.055, contour: light ? 0.025 : 0.03, index: light ? 0.045 : 0.05, sign: light ? 0.16 : 0.18,
+        goldAlpha: 1,
       };
     };
 
-    // the page area the map covers, in document coordinates
+    // the page area the map covers, in document coordinates: from the top of
+    // the page to the end of <main>, fading out just before the footer
     const layout = () => {
       const width = root.clientWidth;
       const r = hero.getBoundingClientRect();
       const top = r.top + scrollY, bottom = r.bottom + scrollY;
       const hole = { x0: r.left - BUFFER, y0: top - BUFFER, x1: r.right + BUFFER, y1: bottom + BUFFER };
-      const height = Math.ceil(hole.y1 + 0.45 * innerHeight);
-      return { width, height, hole, fade: [hole.y1 + 0.1 * innerHeight, height] as [number, number] };
+      const height = Math.ceil(main.getBoundingClientRect().bottom + scrollY);
+      // the text column, with a little air: the river and the map signs keep out
+      const col = main.querySelector('.section .container') ?? hero;
+      const cr = col.getBoundingClientRect(), cs = getComputedStyle(col);
+      const band = { x0: cr.left + parseFloat(cs.paddingLeft) - TEXT_AIR, x1: cr.right - parseFloat(cs.paddingRight) + TEXT_AIR };
+      return { width, height, hole, band, fade: [height - 0.3 * innerHeight, height] as [number, number] };
     };
 
     let current = layout();
     let style = look();
     const draw = () => {
       if (!ready) return;
-      const frame: Frame = { cell: CELL, hole: current.hole, soft: SOFT, fade: current.fade, progress };
+      const frame: Frame = { cell: CELL, hole: current.hole, soft: SOFT, fade: current.fade, progress, scroll: scrollY };
       renderer.draw(frame, style);
     };
 
     const place = () => {
       current = layout();
-      canvas.style.top = `${-(main.getBoundingClientRect().top + scrollY)}px`;
-      renderer.resize(current.width, current.height);
+      renderer.resize(current.width, innerHeight);
     };
+    const need = () => ({ cols: Math.ceil(current.width / CELL) + 1, rows: Math.ceil(current.height / CELL) + 1 });
+
+    // the canvas stays put; the landscape scrolls under it
+    let scrolling = 0;
+    const onScroll = () => {
+      if (scrolling) return;
+      scrolling = requestAnimationFrame(() => { scrolling = 0; draw(); });
+    };
+    addEventListener('scroll', onScroll, { passive: true });
 
     // ---- the golden path follows the gauge
     let anim = 0;
@@ -89,11 +105,12 @@
     // ---- terrain, built in a worker
     const worker = new Worker(new URL('../lib/terrain.worker.ts', import.meta.url), { type: 'module' });
     const generate = () => {
-      const cols = Math.ceil(current.width / CELL) + 1, rows = Math.ceil(current.height / CELL) + 1;
+      const { cols } = need(), rows = need().rows + SPARE;
       const h = current.hole;
       worker.postMessage({
         cols, rows, seed: (Math.random() * 2 ** 32) >>> 0,
         hole: { x0: h.x0 / CELL, y0: h.y0 / CELL, x1: h.x1 / CELL, y1: h.y1 / CELL },
+        band: { x0: current.band.x0 / CELL, x1: current.band.x1 / CELL },
       });
       built = { cols, rows };
     };
@@ -111,18 +128,26 @@
 
     // ---- keep it fitted: a bigger page needs a bigger terrain, otherwise only a redraw
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-    const sizes = new ResizeObserver(() => {
+    const onResize = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         place();
-        if (Math.ceil(current.width / CELL) + 1 > built.cols || Math.ceil(current.height / CELL) + 1 > built.rows) generate();
+        const n = need();
+        if (n.cols > built.cols || n.rows > built.rows) generate();
         else draw();
       }, 150);
-    });
+    };
+    const sizes = new ResizeObserver(onResize);
     sizes.observe(hero);
+    sizes.observe(main);
+    addEventListener('resize', onResize);
     const theme = new MutationObserver(() => { style = look(); draw(); });
     theme.observe(root, { attributes: true, attributeFilter: ['data-bs-theme'] });
-    const stop = () => { cancelAnimationFrame(anim); worker.terminate(); sizes.disconnect(); theme.disconnect(); };
+    const stop = () => {
+      cancelAnimationFrame(anim); cancelAnimationFrame(scrolling); worker.terminate();
+      sizes.disconnect(); theme.disconnect();
+      removeEventListener('scroll', onScroll); removeEventListener('resize', onResize);
+    };
     canvas.addEventListener('webglcontextlost', () => { stop(); canvas.remove(); });
     // the ClientRouter keeps this document: let go of everything on leaving the page
     document.addEventListener('astro:before-swap', stop, { once: true });

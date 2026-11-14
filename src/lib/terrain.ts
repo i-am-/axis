@@ -3,13 +3,16 @@
 //
 //   heightmap   fBm simplex noise with a gentle tilt, normalised to 0…1
 //   flood       priority-flood (Barnes et al. 2014, +ε): every cell drains
-//               to the map's edge or to the hole (the hero panel, which
-//               takes the water like the sea), never uphill
+//               to an outlet, never uphill. For the river the land is only
+//               the side gutters beside the text, draining to the page foot
+//   reach       the longest flow path above each cell
 //   accumulate  how many cells drain through each cell
-//   thalweg     the main river: up from the busiest mouth, always into the
-//               busiest tributary, to its source
-//   hachures    classic contour-row hachures: strokes set along each contour
-//               and run downslope towards the next, heavier where it is steep
+//   thalweg     the main river: up from the mouth with the longest reach,
+//               always into the longest tributary, to its source
+//   hachures    classic contour-row hachures: wedges set along each contour
+//               and run downslope towards the next, broader where it is steep
+//   symbols     a sprinkling of old map signs: churches, wells, mines and
+//               windmills, each where such a thing would stand
 //
 // Everything is in grid units (one cell = one height sample, the sample at
 // the cell's centre, as d3-contour places it). Pure; no DOM. renderer:
@@ -18,6 +21,8 @@
 import { contours } from 'd3-contour';
 
 export interface Hole { x0: number; y0: number; x1: number; y1: number }
+/** The text column, in grid x: the river and the map signs keep out of it. */
+export interface Band { x0: number; x1: number }
 export interface Stroke { x0: number; y0: number; x1: number; y1: number; weight: number }
 
 // ---- randomness
@@ -110,8 +115,9 @@ export interface Flood {
 const EPS = 1e-5;
 const NEIGHBOURS = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
 
-/** Priority-flood from the outlets: the map's edge and the hole. */
-export function flood(height: Float32Array, cols: number, rows: number, hole: Hole | null): Flood {
+/** Priority-flood from the outlets: the map's edge and the hole; or, given
+ *  `land`, only over those cells, from the ones on the bottom row. */
+export function flood(height: Float32Array, cols: number, rows: number, hole: Hole | null, land?: Uint8Array): Flood {
   const n = cols * rows;
   const filled = Float32Array.from(height);
   const parent = new Int32Array(n).fill(-1);
@@ -148,8 +154,14 @@ export function flood(height: Float32Array, cols: number, rows: number, hole: Ho
     return top;
   };
 
+  if (land) for (let c = 0; c < n; c++) if (!land[c]) closed[c] = 1;
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
+      if (land) {
+        const c = y * cols + x;
+        if (y === rows - 1 && land[c]) { closed[c] = 1; push(c); }
+        continue;
+      }
       if (x === 0 || y === 0 || x === cols - 1 || y === rows - 1 || inHole(hole, x + 0.5, y + 0.5)) {
         const c = y * cols + x;
         closed[c] = 1;
@@ -173,7 +185,7 @@ export function flood(height: Float32Array, cols: number, rows: number, hole: Ho
       push(m);
     }
   }
-  return { cols, rows, filled, parent, order };
+  return { cols, rows, filled, parent, order: order.subarray(0, k) };
 }
 
 /** Cells draining through each cell, itself included. */
@@ -186,7 +198,20 @@ export function accumulate(f: Flood) {
   return acc;
 }
 
-/** The main river as cells, source first: up from the busiest mouth through the busiest tributary. */
+/** The longest flow path above each cell, in cells (diagonal steps count √2). */
+export function reach(f: Flood) {
+  const len = new Float32Array(f.parent.length);
+  for (let i = f.order.length - 1; i >= 0; i--) {
+    const c = f.order[i], p = f.parent[c];
+    if (p < 0) continue;
+    const step = (c % f.cols) !== (p % f.cols) && ((c / f.cols) | 0) !== ((p / f.cols) | 0) ? Math.SQRT2 : 1;
+    len[p] = Math.max(len[p], len[c] + step);
+  }
+  return len;
+}
+
+/** A river as cells, source first: up from the cell with the greatest weight
+ *  (accumulation or reach) through its greatest tributary at every confluence. */
 export function thalweg(f: Flood, acc: Float32Array) {
   const best = new Int32Array(acc.length).fill(-1);
   let mouth = -1;
@@ -241,10 +266,10 @@ export function contourRings(h: Float32Array, cols: number, rows: number, levels
   return out;
 }
 
-const SPACING = 0.62;        // cells between hachures along a contour (≈ 5 px at 8 px a cell)
-const MAX_LEN = 1.75;        // cells (≈ 14 px)
+const SPACING = 1.0;         // cells between hachures along a contour (≈ 10 px at 10 px a cell)
+const MAX_LEN = 1.5;         // cells (≈ 15 px)
 const MIN_SLOPE = 0.004;     // height per cell: flatter ground is left blank
-const SLOPE_REF = 0.03;      // slope drawn at full weight
+const SLOPE_REF = 0.03;      // slope (height per cell) drawn at full weight
 
 const nearFrame = (cols: number, rows: number, x: number, y: number) => x < 1 || y < 1 || x > cols - 1 || y > rows - 1;
 
@@ -271,10 +296,62 @@ export function hachures(h: Float32Array, cols: number, rows: number, random: ()
         const x1 = x - (gx / slope) * l, y1 = y - (gy / slope) * l;
         if (nearFrame(cols, rows, x1, y1) || inHole(hole, x1, y1)) continue;
         if (at(x1, y1) >= at(x, y)) continue;   // a saddle or a ridge crest: no fall line here
-        out.push({ x0: x, y0: y, x1, y1, weight: Math.min(1, slope / SLOPE_REF) });
+        // weight: the slope's angle, as a share of the full-weight slope's angle
+        out.push({ x0: x, y0: y, x1, y1, weight: Math.min(1, Math.atan(slope / SLOPE_REF) / (Math.PI / 4)) });
       }
       walked += len;
     }
+  }
+  return out;
+}
+
+// ---- map signs
+
+export type Sign = 'church' | 'well' | 'mine' | 'windmill';
+type Seg = [number, number, number, number];
+
+const ring = (cx: number, cy: number, r: number, n = 10): Seg[] =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * 2 * Math.PI, b = ((i + 1) / n) * 2 * Math.PI;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a), cx + r * Math.cos(b), cy + r * Math.sin(b)];
+  });
+
+/** The signs as strokes in a unit box about the origin, y down, the way a
+ *  seventeenth-century map draws them: upright, small, in outline. */
+export const GLYPHS: Record<Sign, Seg[]> = {
+  // a ring with a cross standing on it
+  church: [...ring(0, 0.2, 0.32), [0, -0.12, 0, -0.85], [-0.22, -0.6, 0.22, -0.6]],
+  // a well head with its windlass
+  well: [...ring(0, 0.25, 0.28), [-0.28, 0.25, -0.28, -0.4], [0.28, 0.25, 0.28, -0.4], [-0.4, -0.4, 0.4, -0.4], [0, -0.4, 0, -0.05]],
+  // crossed hammers
+  mine: [[-0.4, -0.4, 0.4, 0.45], [0.4, -0.4, -0.4, 0.45], [-0.58, -0.24, -0.24, -0.58], [0.24, -0.58, 0.58, -0.24]],
+  // a post mill: a tapering body, four sails from the hub
+  windmill: [[-0.16, 0.6, -0.08, 0], [0.16, 0.6, 0.08, 0], [-0.24, 0.6, 0.24, 0.6],
+    [0, 0, -0.45, -0.45], [0, 0, 0.45, -0.45], [0, 0, -0.45, 0.45], [0, 0, 0.45, 0.45],
+    [-0.45, -0.45, -0.3, -0.6], [0.45, -0.45, 0.6, -0.3], [0.45, 0.45, 0.3, 0.6], [-0.45, 0.45, -0.6, 0.3]],
+};
+
+const SIGN_SIZE = 1.3;       // cells (≈ 13 px) a glyph's unit
+const SIGN_GAP = 14;         // cells at least between signs
+const SIGN_CLEAR = 1.1;      // cells of hachures cleared round a sign
+const SIGNS_PER_CELL = 1 / 1100;
+
+/** Where the signs stand: windmills on the heights, wells in the low ground,
+ *  mines on steep slopes, churches between. Only where `free` allows. */
+export function signs(h: Float32Array, cols: number, rows: number, random: () => number, free: (x: number, y: number) => boolean) {
+  const at = sampler(h, cols, rows);
+  const out: { x: number; y: number; sign: Sign }[] = [];
+  const want = Math.round(cols * rows * SIGNS_PER_CELL);
+  for (let tries = 0; tries < want * 40 && out.length < want; tries++) {
+    const x = 2 + random() * (cols - 4), y = 2 + random() * (rows - 4);
+    if (!free(x, y) || out.some((s) => Math.hypot(s.x - x, s.y - y) < SIGN_GAP)) continue;
+    const z = at(x, y), slope = Math.hypot(at(x + 0.5, y) - at(x - 0.5, y), at(x, y + 0.5) - at(x, y - 0.5));
+    const r = random();
+    const sign: Sign = slope > 0.6 * SLOPE_REF ? (r < 0.7 ? 'mine' : 'church')
+      : z > 0.62 ? (r < 0.65 ? 'windmill' : 'church')
+      : z < 0.35 ? (r < 0.65 ? 'well' : 'church')
+      : (r < 0.5 ? 'church' : r < 0.75 ? 'windmill' : 'well');
+    out.push({ x, y, sign });
   }
   return out;
 }
@@ -283,48 +360,69 @@ export function hachures(h: Float32Array, cols: number, rows: number, random: ()
 
 /** Floats per stroke: x0, y0, x1, y1, weight, kind. */
 export const STRIDE = 6;
-/** kind: 0…1 a golden-path hachure at that point along the river; or one of these */
-export const KIND_HACHURE = -1, KIND_CONTOUR = -2, KIND_INDEX = -3;
-const GOLD_RADIUS = 1.75;    // cells (≈ 14 px) from the river
-const LEVELS = 24;
+/** kind: 2…3 a dot of the river's dotted line at 2 + its point (0 source … 1
+ *  mouth) along the river; or one of these */
+export const KIND_HACHURE = -1, KIND_CONTOUR = -2, KIND_INDEX = -3, KIND_SIGN = -4, KIND_DOT = 2;
+const VALLEY = 0.5;          // height a gutter's sides stand above its middle
+const DOT_GAP = 0.9;         // cells between the river's dots
+const LEVELS = 18;
 
-export interface BuildOptions { cols: number; rows: number; hole: Hole | null; seed: number }
+export interface BuildOptions { cols: number; rows: number; hole: Hole | null; band?: Band | null; seed: number }
 export interface Built { data: Float32Array; count: number; river: [number, number][] }
 
-function nearestOnPath(path: [number, number][], cum: number[], x: number, y: number) {
-  let best = Infinity, t = 0;
-  for (let i = 0; i < path.length - 1; i++) {
-    const [ax, ay] = path[i], [bx, by] = path[i + 1];
-    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
-    const u = l2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)) : 0;
-    const d = Math.hypot(ax + dx * u - x, ay + dy * u - y);
-    if (d < best) { best = d; t = cum[i] + u * Math.sqrt(l2); }
-  }
-  return { d: best, along: t };
-}
-
-export function buildTerrain({ cols, rows, hole, seed }: BuildOptions): Built {
+export function buildTerrain({ cols, rows, hole, band = null, seed }: BuildOptions): Built {
   const random = rng(seed);
   const h = heightmap(cols, rows, random);
-  const f = flood(h, cols, rows, hole);
-  const river = chaikin(thalweg(f, accumulate(f)).map((c) => [(c % cols) + 0.5, Math.floor(c / cols) + 0.5] as [number, number]));
+  // the gutters: beside the text column, outside the hole, off the frame
+  const gutter = (x: number, y: number) =>
+    !(band && x >= band.x0 && x <= band.x1) && !inHole(hole, x, y) && x >= 1 && x <= cols - 1 && y >= 1;
+  const land = new Uint8Array(cols * rows);
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) land[y * cols + x] = gutter(x + 0.5, y + 0.5) ? 1 : 0;
+  // each gutter is a gentle valley, so the river wanders down its middle
+  // rather than along a wall; the landscape's own folds make it meander
+  const valley = Float32Array.from(h);
+  if (band) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols;) {
+        if (!land[y * cols + x]) { x++; continue; }
+        let e = x;
+        while (e < cols && land[y * cols + e]) e++;
+        const mid = (x + e - 1) / 2, half = Math.max(1, (e - x) / 2);
+        for (let i = x; i < e; i++) valley[y * cols + i] += VALLEY * ((i - mid) / half) ** 2;
+        x = e;
+      }
+    }
+  }
+  const f = flood(valley, cols, rows, hole, band ? land : undefined);
+  const cells = thalweg(f, reach(f));
+  const river = chaikin(cells.map((c) => [(c % cols) + 0.5, Math.floor(c / cols) + 0.5] as [number, number]));
   const cum = [0];
   for (let i = 1; i < river.length; i++) cum.push(cum[i - 1] + Math.hypot(river[i][0] - river[i - 1][0], river[i][1] - river[i - 1][1]));
   const total = cum.at(-1) || 1;
-  // a box around the river, to skip the distance test for most strokes
-  const xs = river.map((p) => p[0]), ys = river.map((p) => p[1]);
-  const box = { x0: Math.min(...xs) - GOLD_RADIUS, x1: Math.max(...xs) + GOLD_RADIUS, y0: Math.min(...ys) - GOLD_RADIUS, y1: Math.max(...ys) + GOLD_RADIUS };
 
   const rings = contourRings(h, cols, rows, LEVELS);
   const rows_: number[] = [];
+  // map signs in the gutters, clear of the river
+  const nearRiver = (x: number, y: number) => river.some(([rx, ry]) => Math.abs(rx - x) < 2.5 && Math.abs(ry - y) < 2.5);
+  const placed = signs(h, cols, rows, random, (x, y) => gutter(x - 1, y - 1) && gutter(x + 1, y + 1) && gutter(x - 1, y + 1) && gutter(x + 1, y - 1) && !nearRiver(x, y));
+  for (const { x, y, sign } of placed) {
+    for (const [ax, ay, bx, by] of GLYPHS[sign]) rows_.push(x + ax * SIGN_SIZE, y + ay * SIGN_SIZE, x + bx * SIGN_SIZE, y + by * SIGN_SIZE, 0, KIND_SIGN);
+  }
+  const underSign = (x: number, y: number) => placed.some((p) => Math.abs(p.x - x) < SIGN_CLEAR * SIGN_SIZE && Math.abs(p.y - y) < SIGN_CLEAR * SIGN_SIZE);
   for (const s of hachures(h, cols, rows, random, hole, rings, LEVELS)) {
-    let kind = KIND_HACHURE;
-    const mx = (s.x0 + s.x1) / 2, my = (s.y0 + s.y1) / 2;
-    if (mx >= box.x0 && mx <= box.x1 && my >= box.y0 && my <= box.y1) {
-      const near = nearestOnPath(river, cum, mx, my);
-      if (near.d <= GOLD_RADIUS) kind = near.along / total;
+    if (underSign(s.x0, s.y0) || underSign(s.x1, s.y1)) continue;
+    rows_.push(s.x0, s.y0, s.x1, s.y1, s.weight, KIND_HACHURE);
+  }
+  // the river itself, dotted from source to mouth
+  for (let i = 0, next = 0; i < river.length - 1; i++) {
+    const [ax, ay] = river[i], [bx, by] = river[i + 1];
+    const len = cum[i + 1] - cum[i];
+    for (; next <= cum[i + 1]; next += DOT_GAP) {
+      const u = len ? (next - cum[i]) / len : 0;
+      const x = ax + (bx - ax) * u, y = ay + (by - ay) * u;
+      if (!gutter(x, y)) continue;
+      rows_.push(x, y, x, y, 1, KIND_DOT + next / total);
     }
-    rows_.push(s.x0, s.y0, s.x1, s.y1, s.weight, kind);
   }
   for (const { index, ring } of rings) {
     const kind = index % 5 === 4 ? KIND_INDEX : KIND_CONTOUR;
@@ -332,6 +430,7 @@ export function buildTerrain({ cols, rows, hole, seed }: BuildOptions): Built {
       const [ax, ay] = ring[i], [bx, by] = ring[i + 1];
       if (nearFrame(cols, rows, ax, ay) && nearFrame(cols, rows, bx, by)) continue;
       if (inHole(hole, ax, ay) && inHole(hole, bx, by)) continue;
+      if (underSign(ax, ay) || underSign(bx, by)) continue;
       rows_.push(ax, ay, bx, by, 0, kind);
     }
   }

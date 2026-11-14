@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  rng, simplex2, heightmap, flood, accumulate, thalweg, contourRings, sampler,
-  hachures, buildTerrain, STRIDE, type Hole,
+  rng, simplex2, heightmap, flood, accumulate, reach, thalweg, contourRings, sampler,
+  hachures, buildTerrain, STRIDE, KIND_SIGN, type Hole,
 } from './terrain';
 
 const COLS = 90, ROWS = 60;
@@ -50,9 +50,12 @@ describe('drainage', () => {
     }
     expect(atOutlets).toBe(draining);
   });
+  it('the longest river is at least as long as the busiest one', () => {
+    const busiest = thalweg(f, accumulate(f)), longest = thalweg(f, reach(f));
+    expect(longest.length).toBeGreaterThanOrEqual(busiest.length);
+  });
   it('the main river is 8-connected and runs downhill from source to mouth', () => {
-    const acc = accumulate(f);
-    const cells = thalweg(f, acc);
+    const cells = thalweg(f, reach(f));
     expect(cells.length).toBeGreaterThan(10);
     for (let i = 1; i < cells.length; i++) {
       const a = cells[i - 1], b = cells[i];
@@ -87,20 +90,36 @@ describe('drawing', () => {
 });
 
 describe('buildTerrain', () => {
-  it('packs strokes and tags the golden path from source (0) to mouth (1)', () => {
+  it('packs strokes and dots the golden path from source (0) to mouth (1)', () => {
     const t = buildTerrain({ cols: COLS, rows: ROWS, hole: HOLE, seed: 42 });
     expect(t.data.length).toBe(t.count * STRIDE);
     const kinds = new Set<number>();
-    let gold = 0, tMin = 1, tMax = 0;
+    let dots = 0, tMin = 1, tMax = 0;
     for (let i = 0; i < t.count; i++) {
       const k = t.data[i * STRIDE + 5];
-      kinds.add(k < 0 ? k : 0);
-      if (k >= 0) { gold++; tMin = Math.min(tMin, k); tMax = Math.max(tMax, k); }
+      kinds.add(k < 0 ? k : 2);
+      if (k >= 2) { dots++; tMin = Math.min(tMin, k - 2); tMax = Math.max(tMax, k - 2); }
     }
-    expect(kinds).toEqual(new Set([0, -1, -2, -3]));
-    expect(gold).toBeGreaterThan(5);
+    expect(kinds).toEqual(new Set([2, -1, -2, -3, -4]));
+    expect(dots).toBeGreaterThan(10);
     expect(tMin).toBeLessThan(0.2);
     expect(tMax).toBeGreaterThan(0.8);
+  });
+  it('keeps the river and the map signs in the gutters beside the text', () => {
+    const band = { x0: 25, x1: 65 };
+    const hole = { x0: 22, y0: 4, x1: 68, y1: 20 };
+    const t = buildTerrain({ cols: COLS, rows: 160, hole, band, seed: 4 });
+    expect(t.river.length).toBeGreaterThan(20);
+    for (const [x] of t.river) expect(x < band.x0 || x > band.x1).toBe(true);
+    let signs = 0;
+    for (let i = 0; i < t.count; i++) {
+      const r = t.data.subarray(i * STRIDE, (i + 1) * STRIDE);
+      if (r[5] >= 2 || r[5] === KIND_SIGN) {
+        if (r[5] === KIND_SIGN) signs++;
+        expect(r[0] < band.x0 || r[0] > band.x1).toBe(true);
+      }
+    }
+    expect(signs).toBeGreaterThan(0);
   });
   it('is deterministic for a seed', () => {
     const a = buildTerrain({ cols: COLS, rows: ROWS, hole: HOLE, seed: 9 });

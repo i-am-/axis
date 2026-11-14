@@ -283,11 +283,13 @@ blockquote {
   border-radius: 14px;
 }
 
-/* The hachure backdrop: a canvas from the top of the page to below the
-   hero, under everything in <main>. It fades in once its terrain is built. */
+/* The hachure backdrop: a viewport-sized canvas under everything in <main>,
+   drawing the page's landscape at the current scroll. It fades in once its
+   terrain is built; the plated sections let it show through. */
 main:has(> .hachure-backdrop) { position: relative; z-index: 0; }
+main:has(> .hachure-backdrop) .section-plate { background: color-mix(in srgb, var(--plate) 62%, transparent); }
 .hachure-backdrop {
-  position: absolute; left: 0; top: 0; z-index: -1;
+  position: fixed; left: 0; top: 0; z-index: -1;
   pointer-events: none; opacity: 0; transition: opacity .6s ease;
 }
 .hachure-backdrop.is-ready { opacity: 1; }
