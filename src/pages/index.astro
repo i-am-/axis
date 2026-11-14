@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
+import HachureBackdrop from '../components/HachureBackdrop.astro';
 import avatar from '../assets/face-avatar2.png';
 import { experience, education, testimonials } from '../data/orig-content';
 import { viewBox as torchBox, paths as torchPaths, flame, flameBase } from '../data/torchbearer';
@@ -34,6 +35,8 @@ const phases = [
   <!-- ═══ The instrument: a scaling question, which is how a
        coaching engagement actually opens. The answer lights the
        torch from the logo. ═══ -->
+  <HachureBackdrop />
+
   <section class="instrument" id="ask">
     <div class="container torch-grid">
       <div class="torch-copy">

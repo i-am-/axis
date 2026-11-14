@@ -276,8 +276,24 @@ blockquote {
   background:
     radial-gradient(110% 80% at 82% 0%, var(--ocean-dim) 0%, transparent 58%),
     var(--void);
-  border-bottom: 1px solid var(--hair);
+  /* an inset panel, the hachured landscape around it (HachureBackdrop) */
+  width: min(100% - 2rem, var(--maxw) + 3rem);
+  margin: 48px auto;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
 }
+
+/* The hachure backdrop: a viewport-sized canvas under everything in <main>,
+   drawing the page's landscape at the current scroll. It fades in once its
+   terrain is built; the plated sections let it show through. */
+main:has(> .hachure-backdrop) { position: relative; z-index: 0; }
+main:has(> .hachure-backdrop) .section-plate { background: color-mix(in srgb, var(--plate) 62%, transparent); }
+.hachure-backdrop {
+  position: fixed; left: 0; top: 0; z-index: -1;
+  pointer-events: none; opacity: 0; transition: opacity .6s ease;
+}
+.hachure-backdrop.is-ready { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .hachure-backdrop { transition: none; } }
 .instrument h1 { max-width: 15ch; font-size: clamp(2.3rem, 5.2vw, 3.7rem); }
 .instrument .sub {
   max-width: 46ch; margin-top: 1.1rem;

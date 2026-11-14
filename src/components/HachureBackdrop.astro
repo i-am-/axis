@@ -1,0 +1,158 @@
+---
+// A pale hachured landscape behind the whole home page, kept clear around the
+// hero panel: a new random terrain on every load, in the manner of a
+// seventeenth-century map. Beside the text, in the side gutters, stand towns,
+// villages, churches, mills, mines, wells and old battlefields joined by roads; the main road,
+// the one through the most places, is dotted and lit in gold as far as the
+// visitor's gauge reading reaches. Decorative only; without WebGL2 it is
+// simply absent. Terrain: lib/terrain.ts (in a worker); drawing: lib/hachure-gl.ts.
+---
+<canvas class="hachure-backdrop" aria-hidden="true"></canvas>
+
+<script>
+  import { createRenderer, hexRGB, type Look, type Frame } from '../lib/hachure-gl';
+  import type { Built } from '../lib/terrain';
+
+  const CELL = 10;        // CSS px per terrain cell
+  const SPARE = 40;       // extra rows, so a page that grows a little keeps its terrain
+  const BUFFER = 48;      // clear space around the hero panel
+  const TEXT_AIR = 16;    // px the river keeps from the text column
+  const SOFT = 32;        // the map fades in over this beyond the buffer
+  const REVEAL_MS = 1300; // in step with the torch-bearer drawing himself
+
+  function init() {
+    const canvas = document.querySelector<HTMLCanvasElement>('.hachure-backdrop');
+    const hero = document.getElementById('ask');
+    const scale = document.getElementById('scale') as HTMLInputElement | null;
+    const main = canvas?.closest('main');
+    if (!canvas || !hero || !scale || !main) return;
+
+    let gl: ReturnType<typeof createRenderer>;
+    try { gl = createRenderer(canvas); } catch { gl = null; }
+    if (!gl) { canvas.remove(); return; }
+    const renderer = gl;
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const root = document.documentElement;
+    let built = { cols: 0, rows: 0 };
+    let ready = false;
+    let progress = 0;
+
+    const look = (): Look => {
+      const css = getComputedStyle(root);
+      const light = root.getAttribute('data-bs-theme') === 'light';
+      return {
+        ink: hexRGB(css.getPropertyValue('--ink'), light ? [0.08, 0.09, 0.1] : [0.96, 0.95, 0.91]),
+        gold: hexRGB(css.getPropertyValue('--gold-fill'), [0.72, 0.54, 0.17]),
+        hachure: 0.055, contour: light ? 0.025 : 0.03, index: light ? 0.045 : 0.05, sign: light ? 0.3 : 0.32,
+        goldAlpha: 1,
+      };
+    };
+
+    // the page area the map covers, in document coordinates: from the top of
+    // the page to the end of <main>, fading out just before the footer
+    const layout = () => {
+      const width = root.clientWidth;
+      const r = hero.getBoundingClientRect();
+      const top = r.top + scrollY, bottom = r.bottom + scrollY;
+      const hole = { x0: r.left - BUFFER, y0: top - BUFFER, x1: r.right + BUFFER, y1: bottom + BUFFER };
+      const height = Math.ceil(main.getBoundingClientRect().bottom + scrollY);
+      // the text column, with a little air: the river and the map signs keep out
+      const col = main.querySelector('.section .container') ?? hero;
+      const cr = col.getBoundingClientRect(), cs = getComputedStyle(col);
+      const band = { x0: cr.left + parseFloat(cs.paddingLeft) - TEXT_AIR, x1: cr.right - parseFloat(cs.paddingRight) + TEXT_AIR };
+      return { width, height, hole, band, fade: [height - 0.3 * innerHeight, height] as [number, number] };
+    };
+
+    let current = layout();
+    let style = look();
+    const draw = () => {
+      if (!ready) return;
+      const frame: Frame = { cell: CELL, hole: current.hole, soft: SOFT, fade: current.fade, progress, scroll: scrollY };
+      renderer.draw(frame, style);
+    };
+
+    const place = () => {
+      current = layout();
+      renderer.resize(current.width, innerHeight);
+    };
+    const need = () => ({ cols: Math.ceil(current.width / CELL) + 1, rows: Math.ceil(current.height / CELL) + 1 });
+
+    // the canvas stays put; the landscape scrolls under it
+    let scrolling = 0;
+    const onScroll = () => {
+      if (scrolling) return;
+      scrolling = requestAnimationFrame(() => { scrolling = 0; draw(); });
+    };
+    addEventListener('scroll', onScroll, { passive: true });
+
+    // ---- the golden path follows the gauge
+    let anim = 0;
+    const target = () => Number(scale.value) / 10;
+    const ease = (t: number) => 1 - (1 - t) ** 3;
+    const animate = (to: number, ms: number) => {
+      cancelAnimationFrame(anim);
+      if (reduced || ms <= 0) { progress = to; draw(); return; }
+      const from = progress, start = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / ms);
+        progress = from + (to - from) * ease(t);
+        draw();
+        if (t < 1) anim = requestAnimationFrame(tick);
+      };
+      anim = requestAnimationFrame(tick);
+    };
+    scale.addEventListener('input', () => animate(target(), 350));
+
+    // ---- terrain, built in a worker
+    const worker = new Worker(new URL('../lib/terrain.worker.ts', import.meta.url), { type: 'module' });
+    const generate = () => {
+      const { cols } = need(), rows = need().rows + SPARE;
+      const h = current.hole;
+      worker.postMessage({
+        cols, rows, seed: (Math.random() * 2 ** 32) >>> 0,
+        hole: { x0: h.x0 / CELL, y0: h.y0 / CELL, x1: h.x1 / CELL, y1: h.y1 / CELL },
+        band: { x0: current.band.x0 / CELL, x1: current.band.x1 / CELL },
+      });
+      built = { cols, rows };
+    };
+    let first = true;
+    worker.onmessage = (e: MessageEvent<Built>) => {
+      renderer.upload(e.data.data, e.data.count);
+      ready = true;
+      canvas.classList.add('is-ready');
+      if (first) { first = false; progress = 0; animate(target(), REVEAL_MS); } else draw();
+    };
+
+    place();
+    const start = () => generate();
+    if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 800 }); else setTimeout(start, 50);
+
+    // ---- keep it fitted: a bigger page needs a bigger terrain, otherwise only a redraw
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    const onResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        place();
+        const n = need();
+        if (n.cols > built.cols || n.rows > built.rows) generate();
+        else draw();
+      }, 150);
+    };
+    const sizes = new ResizeObserver(onResize);
+    sizes.observe(hero);
+    sizes.observe(main);
+    addEventListener('resize', onResize);
+    const theme = new MutationObserver(() => { style = look(); draw(); });
+    theme.observe(root, { attributes: true, attributeFilter: ['data-bs-theme'] });
+    const stop = () => {
+      cancelAnimationFrame(anim); cancelAnimationFrame(scrolling); worker.terminate();
+      sizes.disconnect(); theme.disconnect();
+      removeEventListener('scroll', onScroll); removeEventListener('resize', onResize);
+    };
+    canvas.addEventListener('webglcontextlost', () => { stop(); canvas.remove(); });
+    // the ClientRouter keeps this document: let go of everything on leaving the page
+    document.addEventListener('astro:before-swap', stop, { once: true });
+  }
+  document.addEventListener('astro:page-load', init);
+</script>
