@@ -9,6 +9,9 @@
 //   accumulate  how many cells drain through each cell
 //   thalweg     the main river: up from the mouth with the longest reach,
 //               always into the longest tributary, to its source
+//   chalk       the contours redrawn by hand: wobbling, pressing harder and
+//               lighter, the chalk skipping; index contours bolder
+//   labels      heights set into breaks in the index contours
 //   hachures    classic contour-row hachures: wedges set along each contour
 //               and run downslope towards the next, broader where it is steep
 //   signs       churches, windmills, mines and wells on the hilltops
@@ -269,8 +272,145 @@ export function contourRings(h: Float32Array, cols: number, rows: number, levels
   return out;
 }
 
+// ---- the contours, drawn by hand in chalk
+
+/** A contour as a hand draws it: points `pts`, the chalk's pressure at each
+ *  (0…1), and `skip[i]` where the chalk lifted between point i and i + 1. */
+export interface ChalkLine { level: number; index: number; pts: [number, number][]; press: number[]; skip: boolean[] }
+
+const WOBBLE = 0.3;          // cells: how far the hand strays from the true contour
+const CHALK_STEP = 0.5;      // cells between the hand's points
+const SKIP = 0.6;            // noise above this lifts the chalk: a short gap
+
+/** Contour rings redrawn by hand: resampled, pushed sideways by slow noise,
+ *  the pressure rising and falling, the chalk skipping now and then, and a
+ *  closed ring left a little open or overdrawn where the hand met its start. */
+export function chalk(rings: Ring[], random: () => number): ChalkLine[] {
+  const noise = simplex2(random);
+  return rings.map(({ level, index, ring }) => {
+    const cum = [0];
+    for (let i = 1; i < ring.length; i++) cum.push(cum[i - 1] + Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]));
+    const total = cum.at(-1)!;
+    const row = random() * 1000;
+    if (total < 2) return { level, index, pts: ring, press: ring.map(() => 0.5), skip: ring.map(() => false) };
+    const first = ring[0], last = ring.at(-1)!;
+    const closed = first[0] === last[0] && first[1] === last[1];
+    const s0 = closed ? random() * total : 0;
+    const drawn = closed ? total + (random() - 0.4) * 1.6 : total;
+    let seg = 0;
+    const at = (s: number) => {
+      if (closed) s = ((s % total) + total) % total;
+      if (s < cum[seg]) seg = 0;
+      while (seg < cum.length - 2 && cum[seg + 1] < s) seg++;
+      const a = ring[seg], b = ring[seg + 1], len = cum[seg + 1] - cum[seg];
+      const f = len ? Math.min(1, Math.max(0, (s - cum[seg]) / len)) : 0;
+      const tx = len ? (b[0] - a[0]) / len : 1, ty = len ? (b[1] - a[1]) / len : 0;
+      return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, tx, ty];
+    };
+    const n = Math.max(2, Math.ceil(drawn / CHALK_STEP));
+    const pts: [number, number][] = [], press: number[] = [], skip: boolean[] = [];
+    for (let k = 0; k <= n; k++) {
+      const u = (k / n) * drawn;
+      const [x, y, tx, ty] = at(s0 + u);
+      const off = WOBBLE * (0.7 * noise(u / 10, row) + 0.3 * noise(u / 3, row + 7));
+      pts.push([x - ty * off, y + tx * off]);
+      // index contours swell and thin more, and faster: a hand bearing down
+      press.push(Math.min(1, Math.max(0, index % 5 === 4
+        ? 0.5 + 0.8 * noise(u / 7, row + 13) + 0.35 * noise(u / 2.2, row + 41)
+        : 0.5 + 0.7 * noise(u / 14, row + 13))));
+      skip.push(noise(u / 2.5, row + 29) > SKIP);
+    }
+    return { level, index, pts, press, skip };
+  });
+}
+
+// ---- height labels on the index contours
+
+/** Digits as hand strokes in a box 0.6 wide, y −0.5 (top) … 0.5, y down. */
+const DIGIT_STROKES: Record<string, [number, number][][]> = {
+  '0': [Array.from({ length: 13 }, (_, i) => [0.3 + 0.29 * Math.sin((i / 12) * 2 * Math.PI), -0.5 * Math.cos((i / 12) * 2 * Math.PI)] as [number, number])],
+  '1': [[[0.1, -0.3], [0.34, -0.5], [0.34, 0.5]]],
+  '2': [[[0.04, -0.3], [0.14, -0.46], [0.32, -0.5], [0.5, -0.42], [0.56, -0.24], [0.48, -0.04], [0.03, 0.5], [0.6, 0.48]]],
+  '3': [[[0.05, -0.4], [0.25, -0.5], [0.48, -0.44], [0.55, -0.27], [0.45, -0.09], [0.24, -0.03], [0.47, 0.03], [0.58, 0.22], [0.5, 0.43], [0.28, 0.5], [0.03, 0.4]]],
+  '4': [[[0.46, 0.5], [0.44, -0.5], [0.02, 0.18], [0.62, 0.2]]],
+  '5': [[[0.55, -0.5], [0.12, -0.49], [0.06, -0.04], [0.28, -0.12], [0.5, -0.05], [0.6, 0.18], [0.52, 0.42], [0.3, 0.5], [0.03, 0.42]]],
+  '6': [[[0.52, -0.45], [0.32, -0.5], [0.12, -0.38], [0.03, -0.05], [0.05, 0.3], [0.25, 0.5], [0.48, 0.45], [0.58, 0.22], [0.48, 0.0], [0.28, -0.05], [0.07, 0.08]]],
+  '7': [[[0.02, -0.49], [0.6, -0.5], [0.24, 0.5]]],
+  '8': [[[0.3, -0.03], [0.09, -0.16], [0.07, -0.38], [0.3, -0.5], [0.52, -0.38], [0.5, -0.16], [0.3, -0.03], [0.06, 0.15], [0.06, 0.38], [0.3, 0.5], [0.55, 0.38], [0.54, 0.15], [0.3, -0.03]]],
+  '9': [[[0.55, -0.16], [0.35, -0.02], [0.12, -0.06], [0.03, -0.28], [0.15, -0.47], [0.35, -0.5], [0.55, -0.38], [0.58, -0.1], [0.52, 0.25], [0.32, 0.5], [0.08, 0.45]]],
+};
+const ANGULAR = new Set(['1', '4', '7']);
+const DIGITS = Object.fromEntries(Object.entries(DIGIT_STROKES).map(([d, lines]) =>
+  [d, ANGULAR.has(d) ? lines : lines.map((l) => chaikin(l, 2))])) as Record<string, [number, number][][]>;
+
+export const LABEL_SIZE = 1.2;   // cells (≈ 12 px): a digit's height
+const LABEL_ADVANCE = 0.8;       // digit heights from one digit to the next
+const LABEL_PAD = 0.6;           // cells of contour cut either side of a label
+const LABEL_EVERY = 55;          // cells along an index contour between its labels
+const LABEL_APART = 28;          // cells at least between any two labels
+export const CONTOUR_METRES = 20;  // the interval between contours; every fifth is an index contour
+
+/** A height label: centred at (x, y), its baseline along (tx, ty), reading
+ *  left to right; `half` the half-length of contour it cuts. */
+export interface Label { x: number; y: number; tx: number; ty: number; half: number; text: string }
+
+/** Heights on the index contours, on straight stretches where `free` allows,
+ *  in the manner of a survey map: the number set into a break in its line. */
+export function heightLabels(lines: ChalkLine[], random: () => number, free: (x: number, y: number) => boolean, base: number): Label[] {
+  const out: Label[] = [];
+  for (const { index, pts } of lines) {
+    if (index % 5 !== 4 || pts.length < 4) continue;
+    const text = String(base + (index + 1) * CONTOUR_METRES);
+    const half = ((text.length - 1) * LABEL_ADVANCE + 0.6) * LABEL_SIZE / 2 + LABEL_PAD;
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const total = cum.at(-1)!;
+    const indexAt = (s: number) => { let i = 0; while (i < cum.length - 1 && cum[i] < s) i++; return i; };
+    for (let s = half + random() * LABEL_EVERY * 0.5; s < total - half;) {
+      const i0 = indexAt(s - half), i1 = indexAt(s + half), im = indexAt(s);
+      const [ax, ay] = pts[i0], [bx, by] = pts[i1], [x, y] = pts[im];
+      const chord = Math.hypot(bx - ax, by - ay);
+      let ok = chord > 0.9 * 2 * half && !out.some((l) => Math.hypot(l.x - x, l.y - y) < LABEL_APART);
+      for (let i = i0; ok && i <= i1; i++) ok = free(pts[i][0], pts[i][1]);
+      if (!ok) { s += 2; continue; }
+      let tx = (bx - ax) / chord, ty = (by - ay) / chord;
+      if (tx < 0) { tx = -tx; ty = -ty; }
+      out.push({ x, y, tx, ty, half, text });
+      s += LABEL_EVERY;
+    }
+  }
+  return out;
+}
+
+/** A label's digits as strokes, each digit set a touch off the line, by hand. */
+export function labelStrokes({ x, y, tx, ty, text }: Label, random: () => number): Seg[] {
+  const k = LABEL_SIZE, out: Seg[] = [];
+  const start = -((text.length - 1) * LABEL_ADVANCE + 0.6) * k / 2;
+  [...text].forEach((ch, j) => {
+    const dx = start + j * LABEL_ADVANCE * k, dy = (random() - 0.5) * 0.08 * k;
+    const place = ([gx, gy]: [number, number]): [number, number] => {
+      const lx = dx + gx * k, ly = dy + gy * k;
+      return [x + tx * lx - ty * ly, y + ty * lx + tx * ly];
+    };
+    for (const line of DIGITS[ch] ?? []) {
+      for (let i = 0; i < line.length - 1; i++) {
+        const [ax, ay] = place(line[i]), [bx, by] = place(line[i + 1]);
+        out.push([ax, ay, bx, by]);
+      }
+    }
+  });
+  return out;
+}
+
+/** Whether a point falls in the break a label cuts into the map. */
+export const underLabel = (labels: Label[], x: number, y: number) => labels.some((l) => {
+  const dx = x - l.x, dy = y - l.y;
+  return Math.abs(dx * l.tx + dy * l.ty) < l.half && Math.abs(dy * l.tx - dx * l.ty) < 0.8 * LABEL_SIZE;
+});
+
 const SPACING = 1.0;         // cells between hachures along a contour (≈ 10 px at 10 px a cell)
-const MAX_LEN = 1.5;         // cells (≈ 15 px)
+const WEDGE = 0.75;          // a hachure's length, as a share of the way to the next contour
+const MAX_LEN = 1.5 * WEDGE; // cells (≈ 11 px)
 const MIN_SLOPE = 0.004;     // height per cell: flatter ground is left blank
 const SLOPE_REF = 0.03;      // slope (height per cell) drawn at full weight
 
@@ -295,7 +435,7 @@ export function hachures(h: Float32Array, cols: number, rows: number, random: ()
         const gx = (at(x + 0.5, y) - at(x - 0.5, y)), gy = (at(x, y + 0.5) - at(x, y - 0.5));
         const slope = Math.hypot(gx, gy);
         if (slope < MIN_SLOPE) continue;
-        const l = Math.min(MAX_LEN, (0.85 * step) / slope);
+        const l = Math.min(MAX_LEN, (0.85 * WEDGE * step) / slope);
         const x1 = x - (gx / slope) * l, y1 = y - (gy / slope) * l;
         if (nearFrame(cols, rows, x1, y1) || inHole(hole, x1, y1)) continue;
         if (at(x1, y1) >= at(x, y)) continue;   // a saddle or a ridge crest: no fall line here
@@ -385,6 +525,89 @@ export function signs(h: Float32Array, cols: number, rows: number, random: () =>
 }
 
 const ROAD_REACH = 60;       // cells: the longest single stretch of road
+const ROAD_ROOM = 0.45;      // a stretch may stray this share of its length off the straight line …
+const ROAD_ROOM_MIN = 6;     // … and at least this many cells
+const ROAD_CLIMB = 6;        // how dearly a step pays for its steepness
+const ROAD_THIN = 3;         // keep every third cell of the way before smoothing it
+/** The 8 neighbours and the 8 knight's moves: 16 headings, so a way across
+ *  the grid need not zigzag in right angles and diagonals. */
+const MOVES = [...NEIGHBOURS, [1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];
+
+/** The gentlest way from a to b: a least-cost path over the grid's cells (16
+ *  headings), each step costing its length × (1 + ROAD_CLIMB · (slope /
+ *  SLOPE_REF)²), so the road takes the least slope it can, winding round
+ *  hills and along the contours as an old road does, but only within the
+ *  locality of a and b (their box, widened by ROAD_ROOM) and where `free`
+ *  allows. Smoothed; null if there is no way. */
+export function gentlest(h: Float32Array, cols: number, rows: number, a: { x: number; y: number }, b: { x: number; y: number },
+  free: (x: number, y: number) => boolean): [number, number][] | null {
+  const room = Math.max(ROAD_ROOM_MIN, ROAD_ROOM * Math.hypot(b.x - a.x, b.y - a.y));
+  const x0 = Math.max(0, Math.floor(Math.min(a.x, b.x) - room)), x1 = Math.min(cols - 1, Math.ceil(Math.max(a.x, b.x) + room));
+  const y0 = Math.max(0, Math.floor(Math.min(a.y, b.y) - room)), y1 = Math.min(rows - 1, Math.ceil(Math.max(a.y, b.y) + room));
+  const w = x1 - x0 + 1, n = w * (y1 - y0 + 1);
+  const cell = (x: number, y: number) => (Math.min(y1, Math.max(y0, Math.floor(y))) - y0) * w + Math.min(x1, Math.max(x0, Math.floor(x))) - x0;
+  const from = cell(a.x, a.y), to = cell(b.x, b.y);
+  const open = new Uint8Array(n);
+  for (let i = 0; i < n; i++) open[i] = free(x0 + (i % w) + 0.5, y0 + Math.floor(i / w) + 0.5) ? 1 : 0;
+  open[from] = open[to] = 1;
+  const height = (i: number) => h[(y0 + Math.floor(i / w)) * cols + x0 + (i % w)];
+  const dist = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1);
+  // a binary min-heap of [cost, cell]
+  const heap: [number, number][] = [];
+  const push = (d: number, c: number) => {
+    heap.push([d, c]);
+    for (let i = heap.length - 1; i > 0;) {
+      const up = (i - 1) >> 1;
+      if (heap[up][0] <= heap[i][0]) break;
+      [heap[i], heap[up]] = [heap[up], heap[i]];
+      i = up;
+    }
+  };
+  const pop = () => {
+    const top = heap[0], last = heap.pop()!;
+    if (heap.length) {
+      heap[0] = last;
+      for (let i = 0; ;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+        if (m === i) break;
+        [heap[i], heap[m]] = [heap[m], heap[i]];
+        i = m;
+      }
+    }
+    return top;
+  };
+  dist[from] = 0;
+  push(0, from);
+  while (heap.length) {
+    const [d, c] = pop();
+    if (d > dist[c]) continue;
+    if (c === to) break;
+    const cx = c % w, cy = Math.floor(c / w);
+    for (const [dx, dy] of MOVES) {
+      const x = cx + dx, y = cy + dy;
+      if (x < 0 || y < 0 || x >= w || y > y1 - y0) continue;
+      const m = y * w + x;
+      if (!open[m]) continue;
+      // a knight's move must not hop over closed ground
+      if ((Math.abs(dx) === 2 || Math.abs(dy) === 2) && !open[(cy + Math.trunc(dy / 2)) * w + cx + Math.trunc(dx / 2)]) continue;
+      const len = Math.hypot(dx, dy);
+      const slope = Math.abs(height(m) - height(c)) / len / SLOPE_REF;
+      const nd = d + len * (1 + ROAD_CLIMB * slope * slope);
+      if (nd < dist[m]) { dist[m] = nd; prev[m] = c; push(nd, m); }
+    }
+  }
+  if (prev[to] < 0 && to !== from) return null;
+  const cells: [number, number][] = [];
+  for (let c = to; c >= 0; c = prev[c]) cells.push([x0 + (c % w) + 0.5, y0 + Math.floor(c / w) + 0.5]);
+  cells.reverse();
+  const thin = cells.filter((_, i) => i % ROAD_THIN === 0 || i === cells.length - 1);
+  thin[0] = [a.x, a.y];
+  thin[thin.length - 1] = [b.x, b.y];
+  return chaikin(thin, 4);
+}
 const SETTLE_GAP = 16;       // cells at least between a settlement and any other sign
 const SETTLE_PER_CELL = 1 / 1400;
 
@@ -430,7 +653,8 @@ export function battles(h: Float32Array, cols: number, rows: number, random: () 
  *  minimum spanning tree), each bowed a little and kept where `free` allows.
  *  The main road is the network's longest chain, the one through the most
  *  places, running from its upper end; the rest are byways. */
-export function roads(places: { x: number; y: number; sign: Sign }[], random: () => number, free: (x: number, y: number) => boolean) {
+export function roads(places: { x: number; y: number; sign: Sign }[], random: () => number, free: (x: number, y: number) => boolean,
+  reroute?: (a: { x: number; y: number }, b: { x: number; y: number }) => [number, number][] | null) {
   const n = places.length;
   const route = (a: typeof places[0], b: typeof places[0]) => {
     const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
@@ -492,7 +716,9 @@ export function roads(places: { x: number; y: number; sign: Sign }[], random: ()
   for (let c = best.b; c !== best.a && best.a >= 0;) {
     const e = tree[best.via[c]];
     onMain.add(best.via[c]);
-    const pts = e.i === c ? e.pts : [...e.pts].reverse();   // from c towards a
+    // the main road's stretches follow the relief where `reroute` finds a way
+    const way = reroute?.(places[e.i], places[e.j]) ?? e.pts;
+    const pts = e.i === c ? way : [...way].reverse();   // from c towards a
     main.push(...(main.length ? pts.slice(1) : pts));
     c = e.i === c ? e.j : e.i;
   }
@@ -511,7 +737,7 @@ export function roads(places: { x: number; y: number; sign: Sign }[], random: ()
 export const STRIDE = 6;
 /** kind: 2…3 a dot of the main road at 2 + its point along the road (0 at
  *  its upper end … 1); or one of these */
-export const KIND_HACHURE = -1, KIND_CONTOUR = -2, KIND_INDEX = -3, KIND_SIGN = -4, KIND_ROAD = -5, KIND_DOT = 2;
+export const KIND_HACHURE = -1, KIND_CONTOUR = -2, KIND_INDEX = -3, KIND_SIGN = -4, KIND_ROAD = -5, KIND_LABEL = -6, KIND_DOT = 2;
 const VALLEY = 0.45;         // height the ridge behind the text stands above a gutter's floor
 const DOT_GAP = 0.9;         // cells between the main road's dots
 const LEVELS = 18;
@@ -549,7 +775,8 @@ export function buildTerrain({ cols, rows, hole, band = null, seed }: BuildOptio
   const cells = thalweg(f, reach(f));
   const river = chaikin(cells.map((c) => [(c % cols) + 0.5, Math.floor(c / cols) + 0.5] as [number, number]));
 
-  const rings = contourRings(h, cols, rows, LEVELS);
+  const lines = chalk(contourRings(h, cols, rows, LEVELS), random);
+  const base = 100 * Math.floor(random() * 6);   // the lowest contour's height, a new valley floor each load
   const rows_: number[] = [];
   // map signs in the gutters, clear of the river
   const nearRiver = (x: number, y: number) => river.some(([rx, ry]) => Math.abs(rx - x) < 2.5 && Math.abs(ry - y) < 2.5);
@@ -564,16 +791,22 @@ export function buildTerrain({ cols, rows, hole, band = null, seed }: BuildOptio
     const k = SIGN_SIZE * SIGN_SCALE[sign];
     for (const [ax, ay, bx, by] of GLYPHS[sign]) rows_.push(x + ax * k, y + ay * k, x + bx * k, y + by * k, 0, KIND_SIGN);
   }
-  const { main, byways } = roads(placed, random, (x, y) => gutter(x, y));
+  // heights on the index contours, in the gutters, clear of the signs
+  const clearOfSigns = (x: number, y: number) => placed.every((p) => Math.hypot(p.x - x, p.y - y) > 2.5 * SIGN_SIZE * SIGN_SCALE[p.sign]);
+  const labels = heightLabels(lines, random, (x, y) => roomy(1)(x, y) && clearOfSigns(x, y), base);
+  for (const l of labels) for (const [ax, ay, bx, by] of labelStrokes(l, random)) rows_.push(ax, ay, bx, by, 0, KIND_LABEL);
+  const cut = (x: number, y: number) => underLabel(labels, x, y);
+  const { main, byways } = roads(placed, random, (x, y) => gutter(x, y), (a, b) => gentlest(h, cols, rows, a, b, gutter));
   // roads stop short of the signs they join
   const atSign = (x: number, y: number) => placed.some((p) => Math.hypot(p.x - x, p.y - y) < 0.8 * SIGN_SIZE * SIGN_SCALE[p.sign]);
-  for (const [ax, ay, bx, by] of byways) if (!atSign(ax, ay) && !atSign(bx, by)) rows_.push(ax, ay, bx, by, 0, KIND_ROAD);
+  for (const [ax, ay, bx, by] of byways) if (!atSign(ax, ay) && !atSign(bx, by) && !cut(ax, ay) && !cut(bx, by)) rows_.push(ax, ay, bx, by, 0, KIND_ROAD);
   const underSign = (x: number, y: number) => placed.some((p) => {
     const r = SIGN_CLEAR * SIGN_SIZE * SIGN_SCALE[p.sign];
     return Math.abs(p.x - x) < r && Math.abs(p.y - y) < r;
   });
+  const rings = lines.map(({ level, index, pts }) => ({ level, index, ring: pts }));
   for (const s of hachures(h, cols, rows, random, hole, rings, LEVELS)) {
-    if (underSign(s.x0, s.y0) || underSign(s.x1, s.y1)) continue;
+    if (underSign(s.x0, s.y0) || underSign(s.x1, s.y1) || cut(s.x0, s.y0) || cut(s.x1, s.y1)) continue;
     rows_.push(s.x0, s.y0, s.x1, s.y1, s.weight, KIND_HACHURE);
   }
   // the main road, dotted from its upper end (0) to its lower (1)
@@ -590,14 +823,16 @@ export function buildTerrain({ cols, rows, hole, band = null, seed }: BuildOptio
       rows_.push(x, y, x, y, 1, KIND_DOT + next / total);
     }
   }
-  for (const { index, ring } of rings) {
+  // contours: weight is the chalk's pressure, drawn as the stroke's width
+  for (const { index, pts, press, skip } of lines) {
     const kind = index % 5 === 4 ? KIND_INDEX : KIND_CONTOUR;
-    for (let i = 0; i < ring.length - 1; i++) {
-      const [ax, ay] = ring[i], [bx, by] = ring[i + 1];
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (skip[i]) continue;
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
       if (nearFrame(cols, rows, ax, ay) && nearFrame(cols, rows, bx, by)) continue;
       if (inHole(hole, ax, ay) && inHole(hole, bx, by)) continue;
-      if (underSign(ax, ay) || underSign(bx, by)) continue;
-      rows_.push(ax, ay, bx, by, 0, kind);
+      if (underSign(ax, ay) || underSign(bx, by) || cut(ax, ay) || cut(bx, by)) continue;
+      rows_.push(ax, ay, bx, by, (press[i] + press[i + 1]) / 2, kind);
     }
   }
   return { data: Float32Array.from(rows_), count: rows_.length / STRIDE, river, road: main };

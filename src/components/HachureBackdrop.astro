@@ -44,7 +44,8 @@
       return {
         ink: hexRGB(css.getPropertyValue('--ink'), light ? [0.08, 0.09, 0.1] : [0.96, 0.95, 0.91]),
         gold: hexRGB(css.getPropertyValue('--gold-fill'), [0.72, 0.54, 0.17]),
-        hachure: 0.055, contour: light ? 0.025 : 0.03, index: light ? 0.045 : 0.05, sign: light ? 0.3 : 0.32,
+        hachure: 0.055, contour: light ? 0.1 : 0.11, index: light ? 0.17 : 0.18, sign: light ? 0.3 : 0.32,
+        label: light ? 0.24 : 0.26,
         goldAlpha: 1,
       };
     };

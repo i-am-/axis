@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import HachureBackdrop from '../components/HachureBackdrop.astro';
+import ClientQuotes from '../components/ClientQuotes.astro';
 import avatar from '../assets/face-avatar2.png';
 import { experience, education, testimonials } from '../data/orig-content';
 import { viewBox as torchBox, paths as torchPaths, flame, flameBase } from '../data/torchbearer';
@@ -188,16 +189,17 @@ const phases = [
       <Image src={avatar} width={300} height={300} fit="cover" position="top" format="webp"
              quality={85} alt="Ilya Malyarenko" class="portrait" loading="lazy" />
       </div>
+      <!-- the figures roll in like a counter (the script at the foot of this page) -->
       <div class="facts">
-        <div class="fact"><b>15</b><span>years in management consulting, PwC Moscow and Dublin</span></div>
-        <div class="fact"><b>6</b><span>years in biopharma supply chain at AstraZeneca</span></div>
-        <div class="fact"><b>2</b><span>languages, English and Russian</span></div>
-        <div class="fact"><b>0</b><span>cost for the first conversation</span></div>
+        <div class="fact"><b data-odometer>15</b><span>years in management consulting, PwC Moscow and Dublin</span></div>
+        <div class="fact"><b data-odometer>6</b><span>years in biopharma supply chain at AstraZeneca</span></div>
+        <div class="fact"><b data-odometer>2</b><span>languages, English and Russian</span></div>
+        <div class="fact"><b data-odometer>0</b><span>cost for the first conversation</span></div>
       </div>
       <div class="callout">
         <p>
           <em>Coaching is not therapy.</em> If the work is your past, trauma or grief, therapy is
-          the right room to start in — the <a href="https://iacp.ie/therapists" target="_blank" rel="noopener" data-track="outbound/iacp">IACP register</a>
+          the right room to start in — the <a href="https://iacp.ie/therapists" target="_blank" rel="noopener" data-track="outbound/iacp">IACP register</a>{' '}
           will find you someone. I will say so in the first call rather than in session four.
         </p>
       </div>
@@ -208,14 +210,18 @@ const phases = [
   <section class="section" id="experience">
     <div class="container">
       <div class="section-head"><h2>Where the questions come from</h2></div>
+      <!-- an accordion: one role open at a time (details sharing a name),
+           the current one open to begin with -->
       <div class="timeline">
         {jobs.map((job) => (
-          <div class={`tl-item${job.duration.includes('NOW') ? ' is-current' : ''}`}>
-            <span class="when">{job.duration.replace('-NOW', '–now').replace('-', '–')}</span>
-            <h3>{job.jobTitle}, {job.company}</h3>
-            <p class="where">{job.location}</p>
+          <details class={`tl-item${job.duration.includes('NOW') ? ' is-current' : ''}`} name="career" open={job.duration.includes('NOW')}>
+            <summary>
+              <span class="when">{job.duration.replace('-NOW', '–now').replace('-', '–')}</span>
+              <span class="tl-title">{job.jobTitle}, {job.company}</span>
+              <span class="where">{job.location}</span>
+            </summary>
             <div class="body" set:html={job.body} />
-          </div>
+          </details>
         ))}
       </div>
     </div>
@@ -243,17 +249,7 @@ const phases = [
   <section class="section" id="testimonials">
     <div class="container">
       <div class="section-head"><h2>Three clients, three different reasons</h2></div>
-      <div class="quotes">
-        {testimonials.map((t) => (
-          <figure class="quote">
-            <blockquote>{t.body}</blockquote>
-            <figcaption>
-              <span class="who">{t.name}</span>
-              <span class="role">{t.position}</span>
-            </figcaption>
-          </figure>
-        ))}
-      </div>
+      <ClientQuotes quotes={testimonials} />
     </div>
   </section>
 
@@ -382,4 +378,60 @@ const phases = [
     }
     document.addEventListener('astro:page-load', initGauge);
   </script>
+<script>
+  // The facts' figures roll in like a mechanical counter when they come into
+  // view: each digit's wheel runs down through random figures, new ones
+  // sliding in from above, and settles on the right one; the wheels to the
+  // right run a little longer, the facts start one after another. Screen
+  // readers get the plain figure throughout. With reduced motion the roll is
+  // short and brisk.
+  function odometers() {
+    const figures = [...document.querySelectorAll<HTMLElement>('[data-odometer]')];
+    if (!figures.length) return;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const SPINS = still ? 4 : 14;        // random figures a wheel passes through
+    const RUN = still ? 0.45 : 1.3;      // s: a wheel's roll
+    const STAGGER = still ? 0.05 : 0.16; // s: from one fact to the next
+    const rand = () => String(Math.floor(Math.random() * 10));
+
+    figures.forEach((fig) => {
+      const value = fig.textContent!.trim();
+      fig.setAttribute('aria-label', value);
+      fig.textContent = '';
+      [...value].forEach((ch, d) => {
+        const wheel = document.createElement('span');
+        wheel.className = 'odo-wheel';
+        wheel.setAttribute('aria-hidden', 'true');
+        const strip = document.createElement('span');
+        strip.className = 'odo-strip';
+        // top to bottom: the right figure, then the random ones; the strip
+        // starts on its last figure and slides down to its first
+        const n = /\d/.test(ch) ? SPINS + d * 3 : 0;
+        const faces = [ch, ...Array.from({ length: n }, rand)];
+        for (const f of faces) {
+          const face = document.createElement('span');
+          face.textContent = f;
+          strip.append(face);
+        }
+        strip.style.setProperty('--faces', String(faces.length));
+        strip.style.setProperty('--run', `${RUN + d * 0.25}s`);
+        wheel.append(strip);
+        fig.append(wheel);
+      });
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        const k = figures.indexOf(e.target as HTMLElement);
+        e.target.querySelectorAll<HTMLElement>('.odo-strip').forEach((s) => s.style.setProperty('--delay', `${k * STAGGER}s`));
+        e.target.classList.add('is-rolling');
+      }
+    }, { threshold: 0.6 });
+    figures.forEach((f) => io.observe(f));
+    document.addEventListener('astro:before-swap', () => io.disconnect(), { once: true });
+  }
+  document.addEventListener('astro:page-load', odometers);
+</script>
 </Base>

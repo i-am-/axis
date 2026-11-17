@@ -45,7 +45,8 @@ export default defineConfig({
         },
       },
     }),
-    sitemap(),
+    // the coaching agreement is sent to clients as a link, not listed
+    sitemap({ filter: (page) => !page.includes('/contract/') }),
   ],
   vite: {
     plugins: [tailwindcss()],

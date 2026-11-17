@@ -1,0 +1,130 @@
+---
+// The clients' words as a left-to-right accordion: one client open wide, the
+// others narrow strips under a dark sheet with their name. Opening a client
+// dissolves its sheet from left to right along a ragged, churning noise edge
+// (a new clip-path every frame, traced from a fixed-seed noise field), while
+// the sheet of the one closing grows back over its words. The first client's
+// sheet dissolves on its own when the section comes into view. Without
+// JavaScript the quotes simply stand side by side, uncovered.
+// After "Noise dissolve reveal" (effectatlas.com), written afresh.
+interface Props { quotes: { name: string; position: string; body: string }[] }
+const { quotes } = Astro.props;
+---
+<div class="q-acc" data-q-acc>
+  {quotes.map((t, i) => (
+    <figure class="q-panel" data-open={i === 0 ? '' : undefined}>
+      <button class="q-sheet" type="button" aria-expanded={i === 0 ? 'true' : 'false'} aria-controls={`q-body-${i}`}>
+        <span class="q-n">{String(i + 1).padStart(2, '0')}</span>
+        <span class="q-mark" aria-hidden="true">“</span>
+        <span class="q-name">{t.name}</span>
+      </button>
+      <div class="q-body" id={`q-body-${i}`}>
+        <blockquote>{t.body}</blockquote>
+        <figcaption>
+          <span class="who">{t.name}</span>
+          <span class="role">{t.position}</span>
+        </figcaption>
+      </div>
+    </figure>
+  ))}
+</div>
+
+<script>
+  const RIDGES = 26;      // px: how far the tongues of the edge reach
+  const CRAWL = 1.4;      // how fast the edge keeps churning
+  const DISSOLVE = 1.1;   // s: a whole sheet eaten away (or grown back)
+  const DELAY = 0.22;     // s: the opening sheet waits for its panel to widen a little
+  const POINTS = 56;      // points down the edge
+
+  // fixed-seed noise: a few sines of set frequency and phase, the same on every load
+  const WAVES = [[1 / 46, 0.6, 0.3, 1.0], [1 / 19, 0.3, 2.1, -1.7], [1 / 8, 0.1, 4.4, 2.6]];
+  const edgeNoise = (y: number, t: number) => {
+    let v = 0;
+    for (const [f, a, ph, c] of WAVES) v += a * Math.sin(y * f * 2 * Math.PI + ph + t * c);
+    return Math.sign(v) * Math.abs(v) ** 0.85;   // a little sharper at the tongues' tips
+  };
+  const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
+
+  interface Sheet { el: HTMLElement; p: number; from: number; to: number; start: number; dur: number }
+
+  function init() {
+    const acc = document.querySelector<HTMLElement>('[data-q-acc]');
+    if (!acc) return;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const panels = [...acc.querySelectorAll<HTMLElement>('.q-panel')];
+    const sheets: Sheet[] = panels.map((p) => ({ el: p.querySelector<HTMLElement>('.q-sheet')!, p: 0, from: 0, to: 0, start: 0, dur: 0 }));
+    acc.classList.add('is-live');
+
+    const clip = (s: Sheet, t: number) => {
+      const { el, p } = s;
+      if (p <= 0) { el.style.clipPath = ''; el.classList.remove('is-gone'); return; }
+      if (p >= 1) { el.style.clipPath = 'inset(0 100% 0 0)'; el.classList.add('is-gone'); return; }
+      el.classList.remove('is-gone');
+      const w = el.offsetWidth, h = el.offsetHeight;
+      // the eaten part is left of the edge; the edge crosses from just off the
+      // left side (all covered) to just off the right (all gone)
+      const x0 = -RIDGES + p * (w + 2 * RIDGES);
+      const pts = [`${w + 2}px 0px`];
+      for (let i = 0; i <= POINTS; i++) {
+        const y = (i / POINTS) * h;
+        pts.push(`${(x0 + RIDGES * edgeNoise(y, still ? 0 : t * CRAWL)).toFixed(1)}px ${y.toFixed(1)}px`);
+      }
+      pts.push(`${w + 2}px ${h}px`);
+      el.style.clipPath = `polygon(${pts.join(',')})`;
+    };
+
+    let raf = 0;
+    const frame = (now: number) => {
+      raf = 0;
+      const t = now / 1000;
+      let busy = false;
+      for (const s of sheets) {
+        if (s.p !== s.to) {
+          const k = Math.min(1, Math.max(0, (t - s.start) / s.dur));
+          s.p = k >= 1 ? s.to : s.from + (s.to - s.from) * ease(k);
+          busy = busy || s.p !== s.to;
+        }
+        clip(s, t);
+      }
+      if (busy) raf = requestAnimationFrame(frame);
+    };
+    const go = (s: Sheet, to: number, delay = 0) => {
+      const now = performance.now() / 1000;
+      s.from = s.p; s.to = to;
+      s.start = now + (still ? 0 : delay);
+      s.dur = (still ? 0.35 : DISSOLVE) * Math.max(0.3, Math.abs(to - s.p));
+      if (!raf) raf = requestAnimationFrame(frame);
+    };
+
+    const open = (i: number, reveal = true) => {
+      panels.forEach((p, j) => {
+        const on = j === i;
+        p.toggleAttribute('data-open', on);
+        sheets[j].el.setAttribute('aria-expanded', String(on));
+        if (!on && sheets[j].to !== 0) go(sheets[j], 0);
+      });
+      if (reveal) go(sheets[i], 1, DELAY);
+    };
+    sheets.forEach((s, i) => s.el.addEventListener('click', () => {
+      if (panels[i].hasAttribute('data-open') && s.to === 1) return;
+      open(i);
+    }));
+
+    // the first reveal waits for the section to come into view
+    let shown = false;
+    const seen = new IntersectionObserver((entries) => {
+      if (shown || !entries.some((e) => e.isIntersecting)) return;
+      shown = true;
+      seen.disconnect();
+      const i = Math.max(0, panels.findIndex((p) => p.hasAttribute('data-open')));
+      go(sheets[i], 1, 0.15);
+    }, { threshold: 0.35 });
+    seen.observe(acc);
+
+    // a resize changes the panels' sizes: redraw the edges as they stand
+    const sizes = new ResizeObserver(() => { if (!raf) raf = requestAnimationFrame(frame); });
+    sizes.observe(acc);
+    document.addEventListener('astro:before-swap', () => { cancelAnimationFrame(raf); seen.disconnect(); sizes.disconnect(); }, { once: true });
+  }
+  document.addEventListener('astro:page-load', init);
+</script>

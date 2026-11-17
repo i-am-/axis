@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   rng, simplex2, heightmap, flood, accumulate, reach, thalweg, contourRings, sampler,
-  hachures, buildTerrain, STRIDE, KIND_SIGN, KIND_ROAD, type Hole,
+  hachures, buildTerrain, chalk, gentlest, heightLabels, underLabel, STRIDE, KIND_SIGN, KIND_ROAD, KIND_CONTOUR, KIND_INDEX,
+  CONTOUR_METRES, type Hole,
 } from './terrain';
 
 const COLS = 90, ROWS = 60;
@@ -89,6 +90,60 @@ describe('drawing', () => {
   });
 });
 
+describe('chalk contours and height labels', () => {
+  const h = heightmap(COLS, ROWS, rng(5));
+  const rings = contourRings(h, COLS, ROWS, 15);
+  const lines = chalk(rings, rng(6));
+  it('keeps each line near its true contour, with pressure in 0…1', () => {
+    const at = sampler(h, COLS, ROWS);
+    lines.forEach(({ level, pts, press, skip }) => {
+      expect(press.length).toBe(pts.length);
+      expect(skip.length).toBe(pts.length);
+      for (const p of press) expect(p >= 0 && p <= 1).toBe(true);
+      for (const [x, y] of pts) if (x > 2 && y > 2 && x < COLS - 2 && y < ROWS - 2) expect(Math.abs(at(x, y) - level)).toBeLessThan(0.08);
+    });
+  });
+  it('lifts the chalk now and then, but not for most of a line', () => {
+    let gaps = 0, all = 0;
+    for (const { skip } of lines) for (const s of skip) { all++; if (s) gaps++; }
+    expect(gaps).toBeGreaterThan(0);
+    expect(gaps / all).toBeLessThan(0.2);
+  });
+  it('labels index contours with their height, on free ground, cutting their line', () => {
+    const labels = heightLabels(lines, rng(7), (x) => x > 10, 300);
+    expect(labels.length).toBeGreaterThan(0);
+    for (const l of labels) {
+      expect(l.x).toBeGreaterThan(10);
+      expect(l.tx).toBeGreaterThanOrEqual(0);
+      expect((Number(l.text) - 300) / CONTOUR_METRES % 5).toBe(0);
+      expect(underLabel(labels, l.x, l.y)).toBe(true);
+    }
+  });
+});
+
+describe('gentlest', () => {
+  // a round hill in the middle of flat ground
+  const C = 60, R = 40;
+  const hill = new Float32Array(C * R);
+  for (let y = 0; y < R; y++) for (let x = 0; x < C; x++) hill[y * C + x] = Math.exp(-((x - 30) ** 2 + (y - 20) ** 2) / 60);
+  const at = sampler(hill, C, R);
+  const climb = (pts: [number, number][]) => pts.slice(1).reduce((s, [x, y], i) => s + Math.abs(at(x, y) - at(...pts[i])), 0);
+  const a = { x: 10.5, y: 20.5 }, b = { x: 50.5, y: 20.5 };
+  it('goes round a hill rather than over it, within the locality', () => {
+    const way = gentlest(hill, C, R, a, b, () => true)!;
+    expect(way[0]).toEqual([a.x, a.y]);
+    expect(way.at(-1)).toEqual([b.x, b.y]);
+    const straight = Array.from({ length: 41 }, (_, i) => [a.x + i, a.y] as [number, number]);
+    expect(climb(way)).toBeLessThan(0.3 * climb(straight));
+    for (const [, y] of way) expect(Math.abs(y - 20.5)).toBeLessThanOrEqual(19);
+  });
+  it('keeps to free ground, and gives up where there is no way', () => {
+    const way = gentlest(hill, C, R, a, b, (_, y) => y > 18)!;
+    for (const [, y] of way) expect(y).toBeGreaterThan(17.5);
+    expect(gentlest(hill, C, R, a, b, (x) => Math.abs(x - 30) > 2)).toBeNull();
+  });
+});
+
 describe('buildTerrain', () => {
   it('packs strokes and dots the main road from one end (0) to the other (1)', () => {
     const t = buildTerrain({ cols: COLS, rows: ROWS, hole: HOLE, seed: 42 });
@@ -126,5 +181,14 @@ describe('buildTerrain', () => {
     const a = buildTerrain({ cols: COLS, rows: ROWS, hole: HOLE, seed: 9 });
     const b = buildTerrain({ cols: COLS, rows: ROWS, hole: HOLE, seed: 9 });
     expect(a.data).toEqual(b.data);
+  });
+  it('draws index contours bolder by pressure: contour weights vary', () => {
+    const t = buildTerrain({ cols: COLS, rows: ROWS, hole: HOLE, seed: 3 });
+    const w = new Set<number>();
+    for (let i = 0; i < t.count; i++) {
+      const k = t.data[i * STRIDE + 5];
+      if (k === KIND_CONTOUR || k === KIND_INDEX) w.add(Math.round(t.data[i * STRIDE + 4] * 10));
+    }
+    expect(w.size).toBeGreaterThan(3);
   });
 });

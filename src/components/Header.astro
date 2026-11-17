@@ -38,3 +38,128 @@ const here = Astro.url.pathname;
     </div>
   </div>
 </header>
+
+<script>
+  // A scribble ring round a menu item under the pointer or the keyboard's
+  // focus: a pen loop, a little over one turn so its end overruns its start,
+  // its radius uneven, set off from a new point on every hover. It is drawn
+  // on in a few steps, redrawn several times a second with small differences
+  // (like frame-by-frame animation: nothing tweens), and scribbled away
+  // tail-first on leaving. With reduced motion it is simply drawn, and taken
+  // away. After "Scribble ring" (effectatlas.com), written afresh.
+  const REDRAW = 9;          // times a second the ring is redrawn
+  const WOBBLE = 0.07;       // how uneven the radius is, a share of it
+  const LOOP = 1.18;         // turns of the pen
+  const STROKE = 1.6;        // px: the pen line
+  const DRAW_STEPS = 3, ERASE_STEPS = 3;
+  const PAD_X = 11, PAD_Y = 10;  // px the ring stands off the word
+  const MARGIN = 14;         // px of room round the ring inside its SVG
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  interface Ring {
+    svg: SVGSVGElement; path: SVGPathElement; timer: number;
+    state: 'in' | 'hold' | 'out'; step: number;
+    start: number; dir: number; tilt: number; p1: number; p2: number; spiral: number;
+    w: number; h: number;
+  }
+  const rings = new Map<HTMLElement, Ring>();
+  const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /** The ring's path from `from` to `to` (shares of the pen's whole run). */
+  function draw(r: Ring, from: number, to: number, jitter: boolean) {
+    const j = (a: number) => (jitter ? (Math.random() - 0.5) * a : 0);
+    const p1 = r.p1 + j(1.2), p2 = r.p2 + j(1.2), tilt = r.tilt + j(0.05), scale = 1 + j(0.05);
+    const rx = (r.w / 2 + PAD_X) * scale, ry = (r.h / 2 + PAD_Y) * scale;
+    const cx = r.w / 2 + MARGIN + PAD_X, cy = r.h / 2 + MARGIN + PAD_Y;
+    const n = Math.max(2, Math.round(72 * (to - from)));
+    let d = '';
+    for (let i = 0; i < n; i++) {
+      const u = from + ((to - from) * i) / (n - 1);
+      const a = r.start + r.dir * u * LOOP * 2 * Math.PI;
+      const k = (1 + WOBBLE * (0.6 * Math.sin(2 * a + p1) + 0.4 * Math.sin(3 * a + p2))) * (1 + r.spiral * (u - 0.5));
+      const x = rx * k * Math.cos(a), y = ry * k * Math.sin(a);
+      d += `${i ? 'L' : 'M'}${(cx + x * Math.cos(tilt) - y * Math.sin(tilt)).toFixed(1)} ${(cy + x * Math.sin(tilt) + y * Math.cos(tilt)).toFixed(1)}`;
+    }
+    r.path.setAttribute('d', d);
+  }
+
+  function tick(link: HTMLElement, r: Ring) {
+    if (r.state === 'in') {
+      r.step++;
+      draw(r, 0, r.step / DRAW_STEPS, true);
+      if (r.step >= DRAW_STEPS) r.state = 'hold';
+    } else if (r.state === 'hold') {
+      draw(r, 0, 1, true);
+    } else {
+      r.step++;
+      if (r.step >= ERASE_STEPS) { remove(link); return; }
+      draw(r, r.step / ERASE_STEPS, 1, true);
+    }
+  }
+
+  function remove(link: HTMLElement) {
+    const r = rings.get(link);
+    if (!r) return;
+    clearInterval(r.timer);
+    r.svg.remove();
+    rings.delete(link);
+  }
+
+  function enter(link: HTMLElement) {
+    const old = rings.get(link);
+    if (old) { if (old.state === 'out') { old.state = 'hold'; draw(old, 0, 1, true); } return; }
+    // the ring goes round the words, not the whole row (on a phone a row is wide)
+    const range = document.createRange();
+    range.selectNodeContents(link);
+    const t = range.getBoundingClientRect(), l = link.getBoundingClientRect();
+    const svg = document.createElementNS(SVG, 'svg');
+    const path = document.createElementNS(SVG, 'path');
+    svg.classList.add('scribble');
+    svg.setAttribute('aria-hidden', 'true');
+    const w = t.width, h = t.height;
+    const W = w + 2 * (PAD_X + MARGIN), H = h + 2 * (PAD_Y + MARGIN);
+    svg.setAttribute('width', String(W));
+    svg.setAttribute('height', String(H));
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.left = `${t.left - l.left - PAD_X - MARGIN}px`;
+    svg.style.top = `${t.top - l.top - PAD_Y - MARGIN}px`;
+    path.setAttribute('stroke-width', String(STROKE));
+    svg.append(path);
+    link.append(svg);
+    const r: Ring = {
+      svg, path, timer: 0, state: 'in', step: 0, w, h,
+      start: Math.random() * 2 * Math.PI, dir: Math.random() < 0.5 ? -1 : 1,
+      tilt: (Math.random() - 0.5) * 0.12, p1: Math.random() * 6.28, p2: Math.random() * 6.28,
+      spiral: 0.14 + Math.random() * 0.08,
+    };
+    rings.set(link, r);
+    if (still()) { r.state = 'hold'; draw(r, 0, 1, false); return; }
+    draw(r, 0, 1 / DRAW_STEPS, true);
+    r.step = 1;
+    r.timer = window.setInterval(() => tick(link, r), 1000 / REDRAW);
+  }
+
+  function leave(link: HTMLElement) {
+    const r = rings.get(link);
+    if (!r) return;
+    if (still()) { remove(link); return; }
+    if (r.state !== 'out') { r.state = 'out'; r.step = 0; }
+  }
+
+  const item = (n: EventTarget | null) => (n instanceof Element ? n.closest<HTMLElement>('.site-nav a') : null);
+  document.addEventListener('pointerover', (e) => {
+    const a = item(e.target);
+    if (a && item(e.relatedTarget) !== a && e.pointerType !== 'touch') enter(a);
+  });
+  document.addEventListener('pointerout', (e) => {
+    const a = item(e.target);
+    if (a && item(e.relatedTarget) !== a) leave(a);
+  });
+  document.addEventListener('focusin', (e) => {
+    const a = item(e.target);
+    if (a?.matches(':focus-visible')) enter(a);
+  });
+  document.addEventListener('focusout', (e) => { const a = item(e.target); if (a) leave(a); });
+  // the ClientRouter swaps the header: let go of every ring first
+  document.addEventListener('astro:before-swap', () => [...rings.keys()].forEach(remove));
+</script>
