@@ -9,10 +9,14 @@
 #      the liwan init script, silently killing analytics):
 #        a) liwan.conf still present in /etc/nginx/conf.d
 #        b) liwan procd service enabled & running
+#        e) xray-reality service enabled & running, its nginx pass-through
+#           liwan-reality.conf present, and WAN 443 still forwarded to it
+#           (port 4443). Public HTTPS for stats goes WAN 443 -> Xray Reality
+#           -> nginx 127.0.0.1:8446, so stats is down whenever Xray is.
 #        c) TLS cert valid for > 21 days
 #        d) public endpoint https://stats.igniting.coach/script.js = 200
 #
-# Auth for router checks (a, b), pick one:
+# Auth for router checks (a, b, e), pick one:
 #   - export ROUTER_PW='...'   (uses sshpass)
 #   - or install a key:  ssh-copy-id root@192.168.8.1
 # Checks c, d always run (public, no auth needed).
@@ -35,9 +39,9 @@ step "1/2 Building site"
 ok "dist/ regenerated"
 
 # ---------------------------------------------------------------- 2. router
-step "2/2 Router / Liwan health check"
+step "2/2 Router / Liwan / Xray health check"
 
-# (a) nginx vhost + (b) service — need router access
+# (a) nginx vhost + (b, e) services — need router access
 SSH_CMD=""
 if [[ -n "${ROUTER_PW:-}" ]]; then SSH_CMD=(sshpass -p "$ROUTER_PW" ssh -o ConnectTimeout=8 "$ROUTER")
 elif ssh -o BatchMode=yes -o ConnectTimeout=8 "$ROUTER" true 2>/dev/null; then SSH_CMD=(ssh -o BatchMode=yes "$ROUTER")
@@ -54,6 +58,23 @@ if [[ -n "$SSH_CMD" ]]; then
         ok "liwan service enabled and running"
     else
         bad "liwan service not running — try: /etc/init.d/liwan start"
+    fi
+    if "${SSH_CMD[@]}" /etc/init.d/xray-reality enabled && \
+       "${SSH_CMD[@]}" "ps w | grep -q '[x]ray run'"; then
+        ok "xray-reality service enabled and running"
+    else
+        bad "xray-reality not running — stats is offline; try: /etc/init.d/xray-reality start"
+    fi
+    if "${SSH_CMD[@]}" test -s /etc/nginx/conf.d/liwan-reality.conf; then
+        ok "nginx pass-through liwan-reality.conf present"
+    else
+        bad "liwan-reality.conf MISSING — restore it (likely firmware upgrade)"
+    fi
+    FWD=$("${SSH_CMD[@]}" uci -q get firewall.liwan_https.dest_port || true)
+    if [[ "$FWD" == 4443 ]]; then
+        ok "WAN 443 forwarded to Xray (4443)"
+    else
+        bad "WAN 443 forwards to '${FWD:-nothing}', expected 4443 — try: uci set firewall.liwan_https.dest_port=4443; uci commit firewall; /etc/init.d/firewall reload"
     fi
 else
     echo "   – skipped (no ROUTER_PW / ssh key); set ROUTER_PW to enable"
