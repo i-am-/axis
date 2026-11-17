@@ -17,3 +17,6 @@ dist/
 
 # Symbolon card scans, fetched at build from the private i-am-/symbolon-assets
 public/symbolon/
+
+# Contract build intermediates (contract/build.sh)
+contract/build/

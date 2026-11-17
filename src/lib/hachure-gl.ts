@@ -1,6 +1,7 @@
 // Draws the terrain strokes (terrain.ts) with WebGL2: every hachure, contour
 // segment, map sign stroke, road and river dot is one instance of a quad, expanded in the shaders to
-// an antialiased shape: contours are even capsules, dots are discs, hachures
+// an antialiased shape: contours are capsules as wide as the chalk pressed
+// (index contours bolder), grained and ragged like chalk; dots are discs, hachures
 // are wedges, broad at the top of the slope and as broad as the slope is steep. One draw call per frame, and frames
 // are drawn only on demand: a gauge change, a resize, a theme flip.
 //
@@ -14,7 +15,7 @@ import { STRIDE } from './terrain';
 export type RGB = [number, number, number];
 export interface Look {
   ink: RGB; gold: RGB;
-  hachure: number; contour: number; index: number; sign: number; goldAlpha: number;   // alphas
+  hachure: number; contour: number; index: number; sign: number; label: number; goldAlpha: number;   // alphas
 }
 export interface Frame {
   cell: number;                                            // CSS px per grid cell
@@ -43,9 +44,11 @@ void main() {
   bool dot_ = k >= 1.5;
   float g = dot_ ? 1.0 - smoothstep(uProgress - 0.015, uProgress, k - 2.0) : 0.0;
   // half-widths at the start and the end of the stroke
-  vec2 hw = k <= -4.5 ? vec2(0.5)                                       // road
+  vec2 hw = k <= -5.5 ? vec2(0.6)                                       // height label
+          : k <= -4.5 ? vec2(0.5)                                       // road
           : k <= -3.5 ? vec2(0.95)                                      // map sign, bold
-          : k <= -1.5 ? vec2(0.375)                                     // contour
+          : k <= -2.5 ? vec2(mix(0.45, 2.0, aWK.x))                     // index contour, by pressure
+          : k <= -1.5 ? vec2(mix(0.28, 0.6, aWK.x))                     // contour, by pressure
           : dot_      ? vec2(1.2 * mix(1.0, 1.25, g))                   // river dot
           : vec2(mix(0.35, 1.9, aWK.x), 0.12);                         // hachure wedge
   float half_ = max(hw.x, hw.y);
@@ -69,19 +72,38 @@ flat in vec2 vKind;
 uniform vec3 uInk, uGold;
 uniform vec4 uAlpha;     // hachure, contour, index contour, gold
 uniform vec4 uHole;
-uniform float uSoft, uDpr, uSign;
+uniform float uSoft, uDpr, uSign, uLabel;
 uniform vec2 uFade;
 out vec4 outColor;
+float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
 void main() {
   vec2 pa = vPos - vSeg.xy, ba = vSeg.zw - vSeg.xy;
   float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
   float d = length(pa - ba * h);
-  float cover = clamp((mix(vHalf.x, vHalf.y, h) - d) * uDpr + 0.5, 0.0, 1.0);
+  float k = vKind.x, g = vKind.y;
+  // chalk: contours and labels, their edges ragged and their body grained,
+  // the grain fixed to the page so it holds still as the page scrolls
+  bool chalk = (k <= -1.5 && k > -3.5) || k <= -5.5;
+  float halfw = mix(vHalf.x, vHalf.y, h);
+  if (chalk) halfw *= 0.5 + vnoise(vPos * 0.9);
+  float cover = clamp((halfw - d) * uDpr + 0.5, 0.0, 1.0);
+  if (chalk) cover *= 0.65 + 0.35 * vnoise(vPos * 0.11 + 17.0);
+  // contours are chains of short segments: butt ends, so the joints do not
+  // overlap and bead where the alpha would add up twice
+  if (k <= -1.5 && k > -3.5) {
+    float t = dot(pa, ba) / max(length(ba), 1e-6);
+    cover *= clamp(t * uDpr + 0.5, 0.0, 1.0) * clamp((length(ba) - t) * uDpr + 0.5, 0.0, 1.0);
+  }
   vec2 q = max(uHole.xy - vPos, vPos - uHole.zw);
   float m = smoothstep(0.0, uSoft, length(max(q, 0.0)));
   m *= 1.0 - smoothstep(uFade.x, uFade.y, vPos.y);
-  float k = vKind.x, g = vKind.y;
   float base = k >= 1.5 ? 2.5 * uAlpha.x
+             : k <= -5.5 ? uLabel
              : k <= -4.5 ? 0.6 * uSign
              : k <= -3.5 ? uSign
              : k <= -2.5 ? uAlpha.z
@@ -116,7 +138,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
   const u = (n: string) => gl.getUniformLocation(prog, n);
   const U = {
     view: u('uView'), cell: u('uCell'), progress: u('uProgress'), scroll: u('uScroll'), ink: u('uInk'), gold: u('uGold'),
-    alpha: u('uAlpha'), hole: u('uHole'), soft: u('uSoft'), dpr: u('uDpr'), sign: u('uSign'), fade: u('uFade'),
+    alpha: u('uAlpha'), hole: u('uHole'), soft: u('uSoft'), dpr: u('uDpr'), sign: u('uSign'), label: u('uLabel'), fade: u('uFade'),
   };
 
   const vao = gl.createVertexArray();
@@ -172,6 +194,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
       gl.uniform4f(U.hole, f.hole.x0, f.hole.y0, f.hole.x1, f.hole.y1);
       gl.uniform1f(U.soft, f.soft);
       gl.uniform1f(U.sign, look.sign);
+      gl.uniform1f(U.label, look.label);
       gl.uniform1f(U.dpr, dpr);
       gl.uniform2f(U.fade, f.fade[0], f.fade[1]);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);

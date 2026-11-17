@@ -1,0 +1,226 @@
+---
+// The coaching agreement, to read and to sign. Not in the menu and not
+// indexed: I send clients the link after the chemistry call.
+//
+// The agreement (public/contract/coaching-agreement.pdf, built by
+// contract/build.sh) is shown with pdf.js. The client draws a signature
+// (signature_pad), confirms they are 18 or over and agree to the privacy
+// notice and the agreement; their browser stamps signature, name and date
+// onto the PDF (pdf-lib, src/lib/contract-sign.ts) and the form sends it,
+// with the confirmations, through Netlify Forms (form "contract"; the signed
+// PDF arrives as a file upload). They keep a copy of the signed PDF.
+import Base from '../layouts/Base.astro';
+---
+<Base title="Our coaching agreement" description="The coaching agreement, to read and sign." noindex>
+  <div class="page contract-page">
+    <div class="container">
+      <header class="page-header">
+        <h1>Our coaching agreement</h1>
+        <p>
+          Two pages on how we'll work together. Read it at your own pace; if anything doesn't sit
+          right, tell me before you sign and we'll talk it through.
+        </p>
+      </header>
+
+      <section class="agreement" aria-label="The agreement">
+        <div class="agreement-bar">
+          <span class="agreement-state" data-state>The agreement</span>
+          <a class="btn btn-quiet" href="/contract/coaching-agreement.pdf" download data-download>Download PDF</a>
+        </div>
+        <div class="agreement-pages" data-pages>
+          <p class="agreement-wait">Loading the agreement…</p>
+        </div>
+      </section>
+
+      <form
+        class="contract-form" name="contract" method="POST" action="/contract/"
+        data-netlify="true" netlify-honeypot="bot-field" enctype="multipart/form-data"
+        data-track="form/contract" data-contract-form
+      >
+        <input type="hidden" name="form-name" value="contract" />
+        <p class="hp-field"><label>Leave this empty: <input name="bot-field" /></label></p>
+        <input type="hidden" name="contract_version" value="1.0" />
+        <input type="hidden" name="signed_at" value="" />
+        <input type="hidden" name="contract_sha256" value="" />
+        <input type="file" name="signed_contract" accept="application/pdf" hidden />
+
+        <h2>Sign the agreement</h2>
+
+        <div class="field-pair">
+          <div>
+            <label for="ct-name">Your full name</label>
+            <input type="text" id="ct-name" name="full_name" autocomplete="name" required />
+          </div>
+          <div>
+            <label for="ct-email">Your email</label>
+            <input type="email" id="ct-email" name="email" autocomplete="email" required />
+          </div>
+        </div>
+
+        <div class="sig">
+          <div class="sig-head">
+            <label id="sig-label">Your signature</label>
+            <button type="button" class="sig-clear" data-sig-clear>Clear</button>
+          </div>
+          <div class="sig-pad">
+            <canvas data-sig-pad role="img" aria-labelledby="sig-label"></canvas>
+            <span class="sig-line" aria-hidden="true"></span>
+            <span class="sig-hint" data-sig-hint>Sign here with your mouse, finger or pen</span>
+          </div>
+        </div>
+
+        <details class="privacy" open>
+          <summary>Privacy notice</summary>
+          <div class="privacy-body">
+            <p><strong>Who.</strong> Ilya Malyarenko of Igniting Coach (<a href="https://igniting.coach">igniting.coach</a>) is responsible for your information (the controller under the GDPR).</p>
+            <p><strong>What this form collects.</strong> Your name and email, your drawn signature, the time you sign, your three confirmations below, and the signed agreement as a PDF.</p>
+            <p><strong>Why.</strong> To make our coaching agreement and keep a record of it: the basis is the agreement itself, and the law, which requires business records to be kept. Nothing here is used for marketing.</p>
+            <p><strong>Where it goes.</strong> The form is handled by Netlify, the company that hosts this website. It stores the submission and passes it to me by email. Netlify may process data outside the EU, under the safeguards the GDPR requires.</p>
+            <p><strong>For how long.</strong> Six years after our work together ends, as Irish tax law requires; then it is deleted.</p>
+            <p><strong>Your rights.</strong> You can see, correct or delete your information, limit or object to its use, take a copy, or withdraw your consent at any time. Ask me through the <a href="/#contact">contact form</a>. You can also complain to the Data Protection Commission at <a href="https://www.dataprotection.ie" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
+          </div>
+        </details>
+
+        <div class="consents">
+          <label class="consent"><input type="checkbox" name="adult" value="yes" required /> <span>I am 18 years of age or older.</span></label>
+          <label class="consent"><input type="checkbox" name="privacy_consent" value="yes" required /> <span>I have read the privacy notice and agree to my information being processed as it describes.</span></label>
+          <label class="consent"><input type="checkbox" name="agreement" value="yes" required /> <span>I have read <em>Our Coaching Agreement</em> and agree to it.</span></label>
+        </div>
+
+        <p class="contract-error" data-error role="alert" hidden></p>
+        <div class="contract-actions">
+          <button class="btn btn-primary" type="submit" data-submit>Sign and send</button>
+          <span class="contract-note">You'll get a copy of the signed agreement to keep.</span>
+        </div>
+      </form>
+
+      <div class="contract-done" data-done hidden tabindex="-1">
+        <h2>Thank you — it's signed</h2>
+        <p>Your signed agreement is above, and on its way to me. Keep a copy for yourself:</p>
+        <p><a class="btn btn-primary" data-signed-download download>Download your signed copy</a></p>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<script>
+  import * as pdfjs from 'pdfjs-dist';
+  import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+  import SignaturePad from 'signature_pad';
+  import { signAgreement, sha256, trimmedPng } from '../lib/contract-sign';
+
+  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+  const PDF_URL = '/contract/coaching-agreement.pdf';
+  const FONT_URL = '/contract/Inter-Light.ttf';
+  const INK = '#D4AF5A';   // the signature's gold
+
+  async function init() {
+    const host = document.querySelector<HTMLElement>('[data-pages]');
+    const form = document.querySelector<HTMLFormElement>('[data-contract-form]');
+    if (!host || !form) return;
+    const stateEl = document.querySelector<HTMLElement>('[data-state]')!;
+    const errorEl = form.querySelector<HTMLElement>('[data-error]')!;
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+
+    // ---- the agreement, drawn page by page at the width it has
+    let shown: Uint8Array;
+    const original = new Uint8Array(await (await fetch(PDF_URL)).arrayBuffer());
+    shown = original;
+    const render = async (bytes: Uint8Array) => {
+      const task = pdfjs.getDocument({ data: bytes.slice() });
+      const doc = await task.promise;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const canvases: HTMLCanvasElement[] = [];
+      for (let n = 1; n <= doc.numPages; n++) {
+        const page = await doc.getPage(n);
+        const base = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: (host.clientWidth / base.width) * dpr });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', `Page ${n} of ${doc.numPages} of the coaching agreement`);
+        await page.render({ canvas, viewport }).promise;
+        canvases.push(canvas);
+      }
+      host.replaceChildren(...canvases);
+      await task.destroy();
+    };
+    try { await render(shown); } catch (err) { console.error('agreement viewer:', err); host.innerHTML = '<p class="agreement-wait">The agreement could not be shown here. <a href="/contract/coaching-agreement.pdf">Open the PDF</a>.</p>'; }
+    let width = host.clientWidth, resizeTimer = 0;
+    new ResizeObserver(() => {
+      if (Math.abs(host.clientWidth - width) < 8) return;
+      width = host.clientWidth;
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => render(shown).catch(() => {}), 200);
+    }).observe(host);
+
+    // ---- the signature, in gold
+    const canvas = form.querySelector<HTMLCanvasElement>('[data-sig-pad]')!;
+    const hint = form.querySelector<HTMLElement>('[data-sig-hint]')!;
+    const pad = new SignaturePad(canvas, { penColor: INK, backgroundColor: 'rgba(0,0,0,0)', minWidth: 0.9, maxWidth: 2.8 });
+    const fit = () => {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      const strokes = pad.toData();
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext('2d')!.scale(ratio, ratio);
+      pad.clear();
+      pad.fromData(strokes);
+    };
+    new ResizeObserver(fit).observe(canvas);
+    pad.addEventListener('beginStroke', () => { hint.hidden = true; errorEl.hidden = true; });
+    form.querySelector('[data-sig-clear]')!.addEventListener('click', () => { pad.clear(); hint.hidden = false; });
+
+    const fail = (msg: string) => { errorEl.textContent = msg; errorEl.hidden = false; };
+
+    // ---- sign: stamp the PDF here, then send it through Netlify Forms
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!form.reportValidity()) return;
+      if (pad.isEmpty()) { fail('Please sign in the box before sending.'); return; }
+      submit.disabled = true;
+      submit.textContent = 'Signing…';
+      errorEl.hidden = true;
+      try {
+        const name = (form.elements.namedItem('full_name') as HTMLInputElement).value.trim();
+        const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
+        const when = new Date();
+        const [hash, font, signature] = await Promise.all([
+          sha256(original), fetch(FONT_URL).then((r) => r.arrayBuffer()), trimmedPng(canvas),
+        ]);
+        const signed = await signAgreement(original.slice().buffer, font, { signature, name, email, when, sha256: hash });
+        const file = new File([signed as BlobPart], `coaching-agreement-signed-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'client'}.pdf`, { type: 'application/pdf' });
+
+        const data = new FormData(form);
+        data.set('signed_at', when.toISOString());
+        data.set('contract_sha256', hash);
+        data.set('signed_contract', file);
+        submit.textContent = 'Sending…';
+        const res = await fetch('/', { method: 'POST', body: data });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        // done: show what was signed, and hand them their copy
+        shown = signed;
+        await render(signed);
+        stateEl.textContent = 'The agreement, signed';
+        const url = URL.createObjectURL(file);
+        document.querySelector<HTMLAnchorElement>('[data-download]')!.href = url;
+        const own = document.querySelector<HTMLAnchorElement>('[data-signed-download]')!;
+        own.href = url;
+        own.download = file.name;
+        form.hidden = true;
+        const done = document.querySelector<HTMLElement>('[data-done]')!;
+        done.hidden = false;
+        done.focus();
+        document.querySelector('.agreement')!.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (err) {
+        console.error('agreement signing:', err);
+        fail('Something went wrong and the agreement was not sent. Please try again, or tell me through the contact form.');
+        submit.disabled = false;
+        submit.textContent = 'Sign and send';
+      }
+    });
+  }
+  document.addEventListener('astro:page-load', () => { init(); });
+</script>
