@@ -681,8 +681,22 @@ input[type="range"].scale:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 
 .agreement { max-width: 52rem; margin-bottom: 2.6rem; }
 .agreement-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
 .agreement-state { font-family: var(--ui); font-size: .86rem; color: var(--ink-soft); }
-.agreement-pages { display: grid; gap: 1rem; padding: clamp(.6rem, 2vw, 1.2rem); background: #0B0B0C; border-radius: 6px; }
+.agreement-tools { display: flex; align-items: center; gap: .8rem; }
+.zoom { display: inline-flex; align-items: center; border: 1px solid var(--hair); border-radius: 3px; overflow: hidden; }
+.zoom button { background: none; border: 0; color: var(--ink); font: inherit; font-size: 1rem; line-height: 1; padding: .55em .8em; cursor: pointer; }
+.zoom button:hover { color: var(--gold); background: var(--plate); }
+.zoom button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.zoom .zoom-fit { font-size: .84rem; border-left: 1px solid var(--hair); }
+.zoom output { min-width: 3.4em; text-align: center; font-family: var(--ui); font-size: .82rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* the pages scroll inside their own window, both ways once zoomed in */
+.agreement-pages {
+  max-height: min(78vh, 62rem); overflow: auto; overscroll-behavior: contain;
+  padding: clamp(.6rem, 2vw, 1.2rem); background: #0B0B0C; border-radius: 6px;
+}
+.agreement-pages:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.agreement-sheet { display: grid; gap: 1rem; width: 100%; margin-inline: auto; }
 .agreement-pages canvas { display: block; width: 100%; height: auto; box-shadow: 0 .6rem 1.6rem -1rem rgb(0 0 0 / .8); }
+@media (max-width: 40rem) { .agreement-bar { flex-wrap: wrap; } .agreement-tools { width: 100%; justify-content: space-between; } }
 .agreement-wait { color: #A8A296; font-family: var(--ui); padding: 3rem 1rem; text-align: center; }
 .agreement-wait a { color: #E2C47C; }
 
