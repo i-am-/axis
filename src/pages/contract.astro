@@ -27,9 +27,17 @@ import Base from '../layouts/Base.astro';
       <section class="agreement" aria-label="The agreement">
         <div class="agreement-bar">
           <span class="agreement-state" data-state>The agreement</span>
-          <a class="btn btn-quiet" href="/contract/coaching-agreement.pdf" download data-download>Download PDF</a>
+          <div class="agreement-tools">
+            <div class="zoom" role="group" aria-label="Zoom">
+              <button type="button" data-zoom="out" aria-label="Zoom out">&minus;</button>
+              <output data-zoom-level aria-live="polite">100%</output>
+              <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+              <button type="button" data-zoom="fit" class="zoom-fit">Fit</button>
+            </div>
+            <a class="btn btn-quiet" href="/contract/coaching-agreement.pdf" download data-download>Download PDF</a>
+          </div>
         </div>
-        <div class="agreement-pages" data-pages>
+        <div class="agreement-pages" data-pages tabindex="0" aria-label="The agreement's pages; scroll to read, plus and minus to zoom">
           <p class="agreement-wait">Loading the agreement…</p>
         </div>
       </section>
@@ -124,19 +132,33 @@ import Base from '../layouts/Base.astro';
     const errorEl = form.querySelector<HTMLElement>('[data-error]')!;
     const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
 
-    // ---- the agreement, drawn page by page at the width it has
+    // ---- the agreement, in a scrolling window, page by page, at a zoom
+    // (1 = the window's width); a zoom first scales what is drawn, at once,
+    // then redraws it sharp
     let shown: Uint8Array;
     const original = new Uint8Array(await (await fetch(PDF_URL)).arrayBuffer());
     shown = original;
+    const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
+    let zoom = 1;
+    const sheet = document.createElement('div');
+    sheet.className = 'agreement-sheet';
+    const levelEl = document.querySelector<HTMLOutputElement>('[data-zoom-level]')!;
+    const inner = () => host.clientWidth - parseFloat(getComputedStyle(host).paddingLeft) - parseFloat(getComputedStyle(host).paddingRight);
+
+    let drawing = 0;
     const render = async (bytes: Uint8Array) => {
+      const ticket = ++drawing;
       const task = pdfjs.getDocument({ data: bytes.slice() });
       const doc = await task.promise;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const cssWidth = inner() * zoom;
       const canvases: HTMLCanvasElement[] = [];
       for (let n = 1; n <= doc.numPages; n++) {
         const page = await doc.getPage(n);
         const base = page.getViewport({ scale: 1 });
-        const viewport = page.getViewport({ scale: (host.clientWidth / base.width) * dpr });
+        // sharp at the zoom, but never a canvas wider than browsers allow
+        const scale = Math.min((cssWidth / base.width) * dpr, 8000 / base.width);
+        const viewport = page.getViewport({ scale });
         const canvas = document.createElement('canvas');
         canvas.width = Math.floor(viewport.width);
         canvas.height = Math.floor(viewport.height);
@@ -145,9 +167,46 @@ import Base from '../layouts/Base.astro';
         await page.render({ canvas, viewport }).promise;
         canvases.push(canvas);
       }
-      host.replaceChildren(...canvases);
       await task.destroy();
+      if (ticket !== drawing) return;   // a newer zoom has taken over
+      sheet.replaceChildren(...canvases);
+      if (sheet.parentElement !== host) host.replaceChildren(sheet);
     };
+
+    // zoom about the middle of what is in view
+    let sharpTimer = 0;
+    const setZoom = (next: number) => {
+      next = Math.min(ZOOMS.at(-1)!, Math.max(ZOOMS[0], next));
+      if (next === zoom) return;
+      const cx = (host.scrollLeft + host.clientWidth / 2) / Math.max(1, sheet.offsetWidth);
+      const cy = (host.scrollTop + host.clientHeight / 2) / Math.max(1, sheet.offsetHeight);
+      zoom = next;
+      sheet.style.width = `${zoom * 100}%`;
+      levelEl.value = `${Math.round(zoom * 100)}%`;
+      host.scrollLeft = cx * sheet.offsetWidth - host.clientWidth / 2;
+      host.scrollTop = cy * sheet.offsetHeight - host.clientHeight / 2;
+      clearTimeout(sharpTimer);
+      sharpTimer = window.setTimeout(() => render(shown).catch(() => {}), 180);
+    };
+    // zoom only ever takes values from ZOOMS, so a step is one along the list
+    const step = (dir: 1 | -1) => setZoom(ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, ZOOMS.indexOf(zoom) + dir))]);
+    document.querySelectorAll<HTMLButtonElement>('[data-zoom]').forEach((b) => b.addEventListener('click', () => {
+      const z = b.dataset.zoom;
+      if (z === 'fit') setZoom(1); else step(z === 'in' ? 1 : -1);
+    }));
+    // Ctrl (or ⌘) and the wheel, over the pages
+    host.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      step(e.deltaY < 0 ? 1 : -1);
+    }, { passive: false });
+    // + and − while the pages have the focus
+    host.addEventListener('keydown', (e) => {
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); step(1); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); step(-1); }
+      else if (e.key === '0') { e.preventDefault(); setZoom(1); }
+    });
+
     try { await render(shown); } catch (err) { console.error('agreement viewer:', err); host.innerHTML = '<p class="agreement-wait">The agreement could not be shown here. <a href="/contract/coaching-agreement.pdf">Open the PDF</a>.</p>'; }
     let width = host.clientWidth, resizeTimer = 0;
     new ResizeObserver(() => {
