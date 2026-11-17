@@ -6,9 +6,11 @@
 // contract/build.sh) is shown with pdf.js. The client draws a signature
 // (signature_pad), confirms they are 18 or over and agree to the privacy
 // notice and the agreement; their browser stamps signature, name and date
-// onto the PDF (pdf-lib, src/lib/contract-sign.ts) and the form sends it,
-// with the confirmations, through Netlify Forms (form "contract"; the signed
-// PDF arrives as a file upload). They keep a copy of the signed PDF.
+// onto the PDF (pdf-lib, src/lib/contract-sign.ts). The signed PDF goes to
+// private storage (pages/api/contract.ts, Netlify Blobs "signed-contracts"),
+// never to a public address; the details, the confirmations and the PDF's
+// storage key go through Netlify Forms (form "contract", field contract_file).
+// They keep a copy of the signed PDF.
 import Base from '../layouts/Base.astro';
 ---
 <Base title="Our coaching agreement" description="The coaching agreement, to read and sign." noindex>
@@ -34,7 +36,7 @@ import Base from '../layouts/Base.astro';
 
       <form
         class="contract-form" name="contract" method="POST" action="/contract/"
-        data-netlify="true" netlify-honeypot="bot-field" enctype="multipart/form-data"
+        data-netlify="true" netlify-honeypot="bot-field"
         data-track="form/contract" data-contract-form
       >
         <input type="hidden" name="form-name" value="contract" />
@@ -42,7 +44,7 @@ import Base from '../layouts/Base.astro';
         <input type="hidden" name="contract_version" value="1.0" />
         <input type="hidden" name="signed_at" value="" />
         <input type="hidden" name="contract_sha256" value="" />
-        <input type="file" name="signed_contract" accept="application/pdf" hidden />
+        <input type="hidden" name="contract_file" value="" />
 
         <h2>Sign the agreement</h2>
 
@@ -75,7 +77,7 @@ import Base from '../layouts/Base.astro';
             <p><strong>Who.</strong> Ilya Malyarenko of Igniting Coach (<a href="https://igniting.coach">igniting.coach</a>) is responsible for your information (the controller under the GDPR).</p>
             <p><strong>What this form collects.</strong> Your name and email, your drawn signature, the time you sign, your three confirmations below, and the signed agreement as a PDF.</p>
             <p><strong>Why.</strong> To make our coaching agreement and keep a record of it: the basis is the agreement itself, and the law, which requires business records to be kept. Nothing here is used for marketing.</p>
-            <p><strong>Where it goes.</strong> The form is handled by Netlify, the company that hosts this website. It stores the submission and passes it to me by email. Netlify may process data outside the EU, under the safeguards the GDPR requires.</p>
+            <p><strong>Where it goes.</strong> Netlify, the company that hosts this website, keeps your details and passes them to me by email. The signed agreement goes into private storage there: never at a public web address, and only I can open it. Netlify may process data outside the EU, under the safeguards the GDPR requires.</p>
             <p><strong>For how long.</strong> Six years after our work together ends, as Irish tax law requires; then it is deleted.</p>
             <p><strong>Your rights.</strong> You can see, correct or delete your information, limit or object to its use, take a copy, or withdraw your consent at any time. Ask me through the <a href="/#contact">contact form</a>. You can also complain to the Data Protection Commission at <a href="https://www.dataprotection.ie" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
           </div>
@@ -192,13 +194,31 @@ import Base from '../layouts/Base.astro';
         const signed = await signAgreement(original.slice().buffer, font, { signature, name, email, when, sha256: hash });
         const file = new File([signed as BlobPart], `coaching-agreement-signed-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'client'}.pdf`, { type: 'application/pdf' });
 
+        submit.textContent = 'Sending…';
+        // the PDF first, to private storage; it answers with the file's key
+        const bot = (form.elements.namedItem('bot-field') as HTMLInputElement).value;
+        const upload = new FormData();
+        upload.set('signed_contract', file);
+        upload.set('full_name', name);
+        upload.set('email', email);
+        upload.set('signed_at', when.toISOString());
+        upload.set('contract_sha256', hash);
+        upload.set('bot-field', bot);
+        const stored = await fetch('/api/contract/', { method: 'POST', body: upload });
+        if (!stored.ok) throw new Error(`storage HTTP ${stored.status}`);
+        const { key } = (await stored.json()) as { key: string };
+
+        // then the details and that key, through Netlify Forms
         const data = new FormData(form);
         data.set('signed_at', when.toISOString());
         data.set('contract_sha256', hash);
-        data.set('signed_contract', file);
-        submit.textContent = 'Sending…';
-        const res = await fetch('/', { method: 'POST', body: data });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        data.set('contract_file', key);
+        const res = await fetch('/contract/', {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(data as unknown as Record<string, string>).toString(),
+        });
+        if (!res.ok) throw new Error(`form HTTP ${res.status}`);
 
         // done: show what was signed, and hand them their copy
         shown = signed;
