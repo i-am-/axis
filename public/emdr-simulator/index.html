@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMDR Light Twin</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div>
+        <div class="brand-name">EMDR Light Twin</div>
+        <div class="brand-sub">spec v0.7 · stage-2 firmware model</div>
+      </div>
+    </div>
+
+    <div class="transport">
+      <div class="group" title="The two hidden touch sensors on the wood (FR-UI-08). You can also click the marks in the 3D view.">
+        <button id="btnPower" class="btn icon" title="On / off (touch sensor 1)" aria-label="On / off"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.05 6.05a8 8 0 1 0 9.9 0" /><path d="M12 2.5v9" /></svg></button>
+        <button id="btnNext" class="btn icon" title="Next programme (touch sensor 2)" aria-label="Next programme"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M8 5.5v13l10.5-6.5z" /></svg></button>
+      </div>
+      <div class="group" title="Simulation playback (does not change the programme)">
+        <button id="btnPlayPause" class="btn icon" title="Pause the simulation (Space)" aria-label="Pause"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg></button>
+        <button id="btnSlower" class="btn icon" title="Slower playback" aria-label="Slower"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" /></svg></button>
+        <span id="speedLabel" class="speed" title="Playback speed">×1</span>
+        <button id="btnFaster" class="btn icon" title="Faster playback" aria-label="Faster"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+  </header>
+
+  <aside class="sidebar">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="prog">Programme</button>
+      <button class="tab" data-tab="diff">Diffuser</button>
+      <button class="tab" data-tab="housing">Housing</button>
+      <button class="tab" data-tab="strip" title="Strip and view">Strip</button>
+      <button class="tab" data-tab="room">Room</button>
+      <button class="tab" data-tab="safety">Safety</button>
+    </nav>
+    <section class="panel active" id="tab-prog"></section>
+    <section class="panel" id="tab-diff"></section>
+    <section class="panel" id="tab-housing"></section>
+    <section class="panel" id="tab-strip"></section>
+    <section class="panel" id="tab-room"></section>
+    <section class="panel" id="tab-safety"></section>
+  </aside>
+
+  <main class="main">
+    <div class="viewport" id="viewport">
+      <div class="hud">
+        <div class="cams" id="cams"></div>
+        <div class="hud-right">
+          <div class="hud-note" id="hudNote"></div>
+          <button class="hud-btn" id="btnExplode" title="Take the device apart to see what is inside">Explode</button>
+          <button class="hud-btn" id="btnCharts" title="Luminance, spot-spread, cross-section and timeline charts">Show charts</button>
+        </div>
+      </div>
+      <div class="toast" id="toast"></div>
+      <div class="guard" id="guard"></div>
+    </div>
+    <section class="charts">
+      <div class="chart"><canvas id="cProfile"></canvas></div>
+      <div class="chart"><canvas id="cPsf"></canvas></div>
+      <div class="chart">
+        <div class="chart-tools"><button class="mini active" id="secA">A</button><button class="mini" id="secB">B</button></div>
+        <canvas id="cSection"></canvas>
+      </div>
+      <div class="chart"><canvas id="cTimeline"></canvas></div>
+    </section>
+  </main>
+
+  <dialog id="intro">
+    <h2>Before you start</h2>
+    <p>This simulator renders light programmes on your screen. A few built-in programmes are deliberately unsafe so you can test the firmware limiter.</p>
+    <p>A <b>display guard</b> runs at all times. If the output would flash faster than 3 times per second, the 3D view shows a time-averaged image instead. It does this even when you switch the device limiter off.</p>
+    <p class="muted">Material coefficients are nominal starting values. Calibrate them against your own resin and diffuser samples before you rely on absolute numbers.</p>
+    <form method="dialog"><button class="btn primary">Understood</button></form>
+  </dialog>
+
+  <div id="bootError" class="boot-error" hidden></div>
+  <script>
+    // Classic script: runs even when the ES-module app cannot load.
+    (function () {
+      var box = document.getElementById('bootError');
+      var shown = {};
+      window.__twinFail = function (title, detail) {
+        var key = title + '|' + detail;
+        if (shown[key]) return;
+        shown[key] = true;
+        box.hidden = false;
+        var h = document.createElement('div');
+        h.className = 'be-title';
+        h.textContent = title;
+        var pre = document.createElement('pre');
+        pre.textContent = detail || '';
+        box.append(h, pre);
+      };
+      window.__twinClear = function () {
+        box.replaceChildren();
+        box.hidden = true;
+        shown = {};
+      };
+      if (location.protocol === 'file:') {
+        window.__twinFail('Opened as a file, so the simulator cannot start.',
+          'Browsers block ES modules and workers on file:// pages.\n' +
+          'In a terminal, run:  just serve   (from the EDMR or simulator folder)\n' +
+          'then open http://127.0.0.1:8765/');
+        return;
+      }
+      window.addEventListener('error', function (e) {
+        var where = e.filename ? '\n' + e.filename.replace(location.origin, '') + ':' + e.lineno : '';
+        if (e.error || e.message) window.__twinFail('Script error', (e.error && e.error.stack) || (e.message + where));
+        else if (e.target && (e.target.src || e.target.href)) window.__twinFail('Could not load a file', e.target.src || e.target.href);
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        window.__twinFail('Unhandled error', (r && r.stack) || String(r));
+      });
+      setTimeout(function () {
+        if (!window.__twin) window.__twinFail('The simulator did not start within 15 s.',
+          'Open the browser console (F12) for details. Check that the page is served by "just serve" and that WebGL is enabled (chrome://gpu).');
+      }, 15000);
+    })();
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
