@@ -333,7 +333,9 @@ export class DeviceScene {
   constructor(container) {
     this.container = container;
     const r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    r.setPixelRatio(Math.min(2, window.devicePixelRatio));
+    // phones: fill-rate is the limit (bloom + halo passes), so cap the pixel ratio lower
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches;
+    r.setPixelRatio(Math.min(coarse ? 1.5 : 2, window.devicePixelRatio));
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.0;
     container.appendChild(r.domElement);
@@ -465,7 +467,18 @@ export class DeviceScene {
     this.renderer.domElement.style.height = '100%';
     this.composer.setSize(w, h);
     this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    this._fitFov();
+  }
+
+  // The preset field of view is vertical and tuned for a wide view. On a narrow
+  // (phone, portrait) view, widen it so the horizontal field stays the same as at 16:10.
+  _fitFov() {
+    const c = this.camera;
+    const base = this.baseFov ?? 42;
+    const REF = 1.6;
+    c.fov = c.aspect >= REF ? base
+      : Math.min(100, (2 * Math.atan(Math.tan((base * Math.PI) / 360) * (REF / c.aspect)) * 180) / Math.PI);
+    c.updateProjectionMatrix();
   }
 
   // bars: [{ stack, label }]
@@ -1070,8 +1083,8 @@ export class DeviceScene {
     };
     for (const [k, [p, t]] of Object.entries(local)) presets[k] = [toWorld(p), toWorld(t)];
     const [pos, tgt] = presets[preset] ?? presets.viewer;
-    c.fov = preset === 'close' ? 35 : 42;
-    c.updateProjectionMatrix();
+    this.baseFov = preset === 'close' ? 35 : 42;
+    this._fitFov();
     if (animate) {
       // Glide to the preset with the same timing as the explosion.
       this.camTween = {

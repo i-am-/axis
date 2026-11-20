@@ -251,11 +251,93 @@ dialog {
 dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 dialog h2 { margin: 0 0 8px; font-size: 16px; }
 
+.sheet-btn { display: none; }
+
+/* ---------- phones and small tablets ----------
+   Portrait: 3D view on top, the panels as a sheet below; the page itself never
+   scrolls, only the panel does. The arrow in the tab row gives the sheet more room. */
 @media (max-width: 900px) {
-  body { grid-template-columns: 1fr; grid-template-rows: auto 55vh auto; grid-template-areas: 'top' 'main' 'side'; overflow: auto; }
+  html, body { height: 100dvh; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(180px, 44dvh) minmax(0, 1fr);
+    grid-template-areas: 'top' 'main' 'side';
+  }
+  body.sheet-up { grid-template-rows: auto minmax(150px, 26dvh) minmax(0, 1fr); }
   .main, .charts-on .main { grid-template-rows: 1fr; }
   .charts, .charts-on .charts, #btnCharts { display: none; }
-  .sidebar { max-height: none; }
+  .sidebar { border-right: none; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+
+  .topbar {
+    gap: 6px 8px; padding: 6px 8px;
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right));
+  }
+  .brand { min-width: 0; gap: 8px; }
+  .brand-sub { display: none; }
+  .brand-name { font-size: 12px; }
+  .transport { gap: 6px; flex-wrap: nowrap; margin-left: auto; }
+  .btn.icon { min-width: 40px; min-height: 38px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; }
+  .speed { min-width: 34px; }
+  /* status chips: one line that scrolls sideways */
+  .status { flex: 1 0 100%; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; font-size: 11px; }
+  .status::-webkit-scrollbar { display: none; }
+  .chip { white-space: nowrap; flex: none; }
+
+  .tabs { overflow-x: auto; scrollbar-width: none; padding: 0; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 11px 12px; font-size: 13px; flex: 1 0 auto; }
+  .sheet-btn {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 44px; background: var(--bg-2); border: none; border-left: 1px solid var(--line); color: var(--ink-2); cursor: pointer;
+    position: sticky; right: 0;
+  }
+  .sheet-up .sheet-btn .ico { transform: rotate(180deg); }
+  .panel { padding: 10px 12px 28px; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+
+  /* the 3D view's overlay: camera buttons in one sideways-scrolling row */
+  .hud { left: 6px; right: 6px; top: 6px; }
+  .cams { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; pointer-events: auto; max-width: calc(100% - 92px); }
+  .cams::-webkit-scrollbar { display: none; }
+  .cams > * { flex: none; }
+  .hud-note { display: none; }
+  .hud-btn, .cams button { padding: 6px 10px; }
+
+  /* touch: bigger targets, no zoom on focus (iOS zooms inputs under 16 px) */
+  .btn { padding: 7px 11px; }
+  .btn.small { padding: 6px 10px; }
+  select, input[type='number'], input[type='text'], textarea { font-size: 16px; }
+  input[type='range'] { height: 28px; }
+  .lib-item { padding: 9px 8px; }
+  .row { grid-template-columns: 104px 1fr; }
+  dialog { width: calc(100vw - 32px); }
+  .toast, .guard { max-width: calc(100% - 16px); }
+}
+@media (max-width: 480px) {
+  .brand-name { display: none; }
+  .transport { margin-left: 0; flex: 1; justify-content: space-between; }
+}
+@media (max-width: 900px) and (pointer: coarse) {
+  html { touch-action: manipulation; }
+  .btn:hover { border-color: var(--line); }
+}
+
+/* Landscape phone: too short for a sheet, so the panel sits beside the view. */
+@media (max-height: 520px) and (orientation: landscape) {
+  body, body.sheet-up {
+    grid-template-columns: minmax(0, 1fr) min(46vw, 360px);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: 'top top' 'main side';
+  }
+  .sidebar { border-top: none; border-left: 1px solid var(--line); padding-right: env(safe-area-inset-right); }
+  .sheet-btn { display: none; }
+  .brand-name { display: none; }
+  .status { flex: 1 1 0; min-width: 0; }
+  .topbar { flex-wrap: nowrap; padding-top: 4px; padding-bottom: 4px; }
+  .transport { margin-left: 0; }
+  .btn.icon { min-height: 34px; }
+  .tab { padding: 8px 10px; }
 }
 
 /* Start-up and runtime error box (index.html boot script). */

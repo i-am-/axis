@@ -1446,6 +1446,13 @@ $('#btnCharts').onclick = () => {
 };
 applyCharts();
 
+// Phones (portrait): the arrow in the tab row trades 3D-view height for panel height.
+document.body.classList.toggle('sheet-up', !!store.load('sheetUp', false));
+$('#btnSheet').onclick = () => {
+  const up = document.body.classList.toggle('sheet-up');
+  store.save('sheetUp', up);
+};
+
 // Exploded view: parts of the device pulled apart, with labels.
 const explode = { amount: 0, prevCam: null };
 function setExplode(v, { moveCamera = false } = {}) {
