@@ -2,7 +2,7 @@
 
 import { DeviceScene, MOUNT_DEFAULT } from './scene.js';
 import { OpticsSim } from './optics.js';
-import { Controller, MODES, SHIPPED_PROGRAMMES, makeProgramme, ALTERNATING_MAX_HZ, rgbwForCct } from './controller.js';
+import { Controller, MODES, SHIPPED_MODES, SHIPPED_PROGRAMMES, makeProgramme, ALTERNATING_MAX_HZ, rgbwForCct } from './controller.js';
 import { SafetyLimiter, SAFETY_DEFAULTS, SIM_RATE, pwmAssessment } from './safety.js';
 import {
   MATERIALS, WALLS, FLOORS, STACK_PRESETS, stackFromPreset, makeLayer, applyInk,
@@ -59,7 +59,7 @@ const state = {
   view: { lux: 120, lref: 150, bloom: 0.4, camera: 'viewer', charts: false, ...store.load('view', {}) },
   safety: { ...SAFETY_DEFAULTS, ...store.load('safety', {}) },
   userProgrammes: store.load('programmes', []),
-  cycle: store.load('cycle', ['Ambient warm', 'Desensitise 1.0 Hz', 'Resource / slow 0.3 Hz', 'Breathing 4-1-6-1']),
+  cycle: store.load('cycle', SHIPPED_PROGRAMMES.map((p) => p.name)),
   // Room settings; earlier versions kept wall colour and floor under `view`.
   room: (() => {
     const v = store.load('view', {});
@@ -443,7 +443,7 @@ function renderProgTab() {
     ),
     el('h3', {}, 'Current programme'),
     el('div', { class: 'row' }, el('label', {}, 'Name'), el('div', { class: 'ctl' }, el('input', { type: 'text', value: p.name, style: 'width:100%', oninput: (e) => (p.name = e.target.value) }))),
-    selectRow('Mode', p, 'mode', MODES, () => {
+    selectRow('Mode', p, 'mode', Object.fromEntries(Object.entries(MODES).filter(([k]) => SHIPPED_MODES.includes(k) || k === p.mode)), () => {
       ctrl.setProgramme(ctrl.programme);
       if (ctrl.programme.mode === 'music' && ctrl.programme.music.source === 'mic') startMic();
       renderProgTab();

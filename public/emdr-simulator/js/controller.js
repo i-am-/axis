@@ -155,7 +155,8 @@ export function makeProgramme(over = {}) {
 }
 
 // Shipped defaults (FR-EM-11) plus test programmes.
-export const SHIPPED_PROGRAMMES = [
+// Every built-in programme, including the limiter tests. The tests use it.
+export const ALL_PROGRAMMES = [
   makeProgramme({ name: 'Desensitise 1.0 Hz', mode: 'emdr', emdr: { speed: 1.0, setSeconds: 30 } }),
   makeProgramme({ name: 'Fast 1.5 Hz', mode: 'emdr', emdr: { speed: 1.5, setSeconds: 30 } }),
   makeProgramme({
@@ -208,6 +209,15 @@ export const SHIPPED_PROGRAMMES = [
     },
   }),
 ];
+
+// What the app offers: two EMDR and two breathing programmes.
+export const SHIPPED_MODES = ['emdr', 'breathing'];
+export const SHIPPED_PROGRAMMES = [
+  'Desensitise 1.0 Hz',
+  'Resource / slow 0.3 Hz',
+  'Breathing 4-1-6-1',
+  'Breathing colour 4-7-8 (phases)',
+].map((name) => ALL_PROGRAMMES.find((p) => p.name === name));
 
 const smooth = (a) => a * a * (3 - 2 * a);
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -507,8 +517,13 @@ export class Controller {
     const s = this.set;
     const p = this.programme;
     if (s.state === 'idle') {
-      s.gain = 0;
-      return null;
+      // Between sets the EMDR point rests at its start position, so the bar is
+      // never blank on an EMDR programme. Not while the session clock owns the bar.
+      if (p.mode !== 'emdr' || this.clock.started) {
+        s.gain = 0;
+        return null;
+      }
+      s.gain = Math.min(1, s.gain + dt / 0.3);
     }
     if (s.state === 'running') s.gain = Math.min(1, s.gain + dt / 0.3);
     if (s.state === 'stopping') {
