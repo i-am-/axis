@@ -110,8 +110,14 @@ function syncCycle() {
 syncCycle();
 state.selected = SHIPPED_PROGRAMMES[0].name;
 ctrl.setProgramme(SHIPPED_PROGRAMMES[0], { fade: false });
+// Loading an EMDR programme starts a set, so the point moves straight away.
+const autoStart = () => {
+  if (ctrl.programme.mode === 'emdr' && ctrl.set.state === 'idle') ctrl.startSet();
+};
+autoStart();
 ctrl.onProgrammeChange = (p) => {
   state.selected = p.name;
+  autoStart();
   renderProgTab();
 };
 
@@ -408,6 +414,7 @@ function renderProgTab() {
             if (e.target.type === 'checkbox') return;
             state.selected = q.name;
             ctrl.setProgramme(q);
+            autoStart();
             if (q.mode === 'music' && q.music.source === 'mic') startMic();
             renderProgTab();
           },
